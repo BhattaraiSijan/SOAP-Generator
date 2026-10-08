@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OB/GYN SOAP Note Generator</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%230f8b8d%27/%3E%3Cpath d=%27M16 7v18M7 16h18%27 stroke=%27white%27 stroke-width=%274%27 stroke-linecap=%27round%27/%3E%3C/svg%3E">
+<style>
+  :root{
+    --navy:#12304f; --navy2:#1d4a74; --teal:#0f8b8d; --teal-light:#e3f4f4; --ink:#1f2a37; --muted:#5b6b7c;
+    --line:#dfe6ee; --bg:#f3f6f9; --card:#ffffff; --amber:#b45309; --amber-bg:#fff7e6; --red:#b91c1c; --red-bg:#fdecec;
+    --green:#15803d; --green-bg:#e9f7ee;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.4;padding-bottom:90px}
+  .topbar{background:linear-gradient(120deg,var(--navy),var(--navy2));color:#fff;padding:18px 20px}
+  .topbar .inner{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
+  .topbar h1{margin:0;font-size:21px;font-weight:700;letter-spacing:.2px}
+  .topbar p{margin:2px 0 0;font-size:13px;opacity:.85}
+  .badge{margin-left:auto;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:4px 10px;font-size:12px}
+  .wrap{max-width:1200px;margin:0 auto;padding:16px}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 12px}
+  .toolbar .spacer{flex:1}
+  .banner{position:sticky;top:0;z-index:30;max-width:1200px;margin:0 auto;border-radius:10px;padding:10px 14px;font-weight:600;display:none}
+  .banner.show{display:block}
+  .banner.urgent{background:var(--red-bg);color:var(--red);border:1px solid #f3b4b4}
+  .banner ul{margin:6px 0 0;padding-left:18px;font-weight:500}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:0 0 12px;box-shadow:0 1px 3px rgba(18,48,79,.06)}
+  details.card>summary{list-style:none;cursor:pointer;padding:12px 16px;font-weight:700;font-size:15px;color:var(--navy);display:flex;align-items:center;gap:10px;user-select:none}
+  details.card>summary::-webkit-details-marker{display:none}
+  details.card>summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--teal);border-bottom:2px solid var(--teal);transform:rotate(-45deg);transition:transform .15s;flex:none}
+  details.card[open]>summary::before{transform:rotate(45deg)}
+  details.card>summary .count{margin-left:auto;font-size:12px;font-weight:600;color:var(--teal);background:var(--teal-light);border-radius:999px;padding:2px 9px}
+  details.card>summary .count:empty{display:none}
+  .body{padding:4px 16px 16px;border-top:1px solid var(--line)}
+  .card.plain{padding:14px 16px}
+  .card.plain h2{margin:0 0 10px;font-size:15px;color:var(--navy)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px 16px;align-items:start}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-weight:600;font-size:12.5px;color:var(--muted)}
+  .field.wide{grid-column:1/-1}
+  input,select,textarea{width:100%;padding:8px 10px;border:1px solid #c5cfda;border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{outline:2px solid rgba(15,139,141,.35);border-color:var(--teal)}
+  input[readonly]{background:#f3f6f9;color:var(--muted)}
+  textarea{min-height:64px;resize:vertical}
+  .field.yn{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;background:#f8fafc;border:1px solid #e6ebf1;border-radius:8px;padding:6px 10px;min-height:42px}
+  .field.yn label{color:var(--ink);font-weight:500;font-size:13.5px}
+  .field.yn select{width:auto;min-width:78px;padding:5px 8px;flex:none}
+  .field.yn.is-yes{border-color:var(--teal);background:var(--teal-light)}
+  .field.yn.is-yes select{font-weight:700;color:var(--teal)}
+  .subhead{grid-column:1/-1;margin:10px 0 -2px;font-weight:700;font-size:13px;color:var(--teal);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line);padding-bottom:4px}
+  .note{grid-column:1/-1;font-size:12.5px;color:var(--muted);margin:0}
+  .group{grid-column:1/-1;background:#f6fafb;border-left:3px solid var(--teal);border-radius:8px;padding:10px 12px}
+  .group .gtitle{font-weight:700;font-size:13px;color:var(--navy);margin:0 0 8px}
+  .cond-hidden{display:none !important}
+  .repeat{grid-column:1/-1}
+  .repeat .rtitle{font-weight:700;font-size:13px;color:var(--navy);margin:4px 0 8px}
+  .rrow{position:relative;background:#fbfcfd;border:1px dashed #c9d3de;border-radius:8px;padding:12px 12px 12px;margin:0 0 10px}
+  .rrow .rmv{position:absolute;top:6px;right:8px;background:none;border:1px solid #d9b4b4;color:var(--red);border-radius:6px;padding:2px 8px;font-size:12px;cursor:pointer}
+  .rrow .rlabel{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .unitrow{display:flex;gap:6px}
+  .unitrow select{width:auto;flex:none}
+  .inline-warn{font-size:12.5px;font-weight:600;color:var(--amber);min-height:16px}
+  .inline-warn.red{color:var(--red)}
+  button{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer;font-family:inherit;font-size:13.5px}
+  .btn-primary{background:var(--teal);color:#fff}
+  .btn-primary:hover{background:#0c7476}
+  .btn-secondary{background:#e8eef4;color:var(--navy)}
+  .btn-secondary:hover{background:#dbe4ec}
+  .btn-danger{background:#fde8e8;color:var(--red)}
+  .btn-small{padding:6px 10px;font-size:12.5px}
+  .btn-add{background:var(--teal-light);color:var(--teal);border:1px dashed var(--teal)}
+  .actionbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.96);border-top:1px solid var(--line);box-shadow:0 -2px 10px rgba(18,48,79,.08);padding:10px 16px}
+  .actionbar .inner{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .actionbar .inner .spacer{flex:1}
+  #errors{display:none;background:var(--red-bg);color:var(--red);border:1px solid #f3b4b4;border-radius:8px;padding:10px 14px;margin-bottom:10px}
+  #errors.show{display:block}
+  #errors ul,#noteWarn ul{margin:4px 0 0;padding-left:18px}
+  #noteWarn{display:none;background:var(--amber-bg);color:var(--amber);border:1px solid #f1d49a;border-radius:8px;padding:10px 14px;margin-bottom:10px}
+  #noteWarn.show{display:block}
+  #output{white-space:pre-wrap;background:#fbfcfd;border:1px solid var(--line);border-radius:8px;padding:16px;min-height:160px;font-family:Georgia,"Times New Roman",serif;font-size:14.5px;line-height:1.55;margin:0}
+  #output.empty{color:var(--muted);font-style:italic;font-family:inherit}
+  .icdrow{display:grid;grid-template-columns:130px 1fr auto;gap:8px;margin-bottom:8px;align-items:center}
+  .icdrow input{padding:7px 9px}
+  .icdhint{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+  .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:10px 16px;border-radius:999px;font-weight:600;opacity:0;transition:all .25s;pointer-events:none;z-index:50}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .small{font-size:12px;color:var(--muted)}
+  @media(max-width:700px){
+    .grid{grid-template-columns:1fr}
+    .icdrow{grid-template-columns:100px 1fr auto}
+    .topbar h1{font-size:18px}
+    .actionbar button{flex:1 1 45%}
+  }
+  @media print{
+    body{background:#fff;padding:0}
+    .topbar,.banner,.toolbar,#form,.actionbar,#icdCard,#errors,#noteWarn,.toast,.no-print{display:none !important}
+    .card{border:0;box-shadow:none;margin:0}
+    #output{border:0;padding:0;font-size:12.5pt}
+    .card.plain h2{font-size:14pt}
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="inner">
+    <div>
+      <h1>OB/GYN SOAP Note Generator</h1>
+      <p>Select findings with Yes/No dropdowns, add a few details, then generate a concise SOAP note.</p>
+    </div>
+    <span class="badge">Educational documentation practice — FNP</span>
+  </div>
+</header>
+
+<div id="warnBanner" class="banner urgent" role="alert"></div>
+
+<main class="wrap">
+  <div class="toolbar">
+    <button type="button" class="btn-secondary btn-small" onclick="toggleAll(true)">Expand all</button>
+    <button type="button" class="btn-secondary btn-small" onclick="toggleAll(false)">Collapse all</button>
+    <span class="spacer"></span>
+    <span class="small" id="saveStatus">Draft autosaves in this browser.</span>
+  </div>
+
+  <form id="form" onsubmit="return false;" autocomplete="off"></form>
+
+  <section class="card plain" id="icdCard">
+    <h2>Suggested ICD-10-CM codes</h2>
+    <p class="icdhint">Suggestions are generated from documented history, visit type, and gestational age only. Edit or remove any code; the final list is what appears in the Assessment.</p>
+    <div id="icdList"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <button type="button" class="btn-add btn-small" onclick="addIcdRow('','')">+ Add code</button>
+      <button type="button" class="btn-secondary btn-small" onclick="refreshIcd()">Refresh suggestions</button>
+    </div>
+  </section>
+
+  <section class="card plain" id="outputCard">
+    <h2>Generated SOAP Note</h2>
+    <div id="errors"></div>
+    <div id="noteWarn"></div>
+    <pre id="output" class="empty">Your SOAP note will appear here after you click Generate SOAP Note.</pre>
+  </section>
+</main>
+
+<div class="actionbar">
+  <div class="inner">
+    <button type="button" class="btn-primary" onclick="generate()">Generate SOAP Note</button>
+    <button type="button" class="btn-secondary" onclick="copyNote()">Copy SOAP Note</button>
+    <button type="button" class="btn-secondary" onclick="printNote()">Print SOAP Note</button>
+    <button type="button" class="btn-secondary" onclick="saveEntryMd()">Save Entry (.md)</button>
+    <button type="button" class="btn-secondary" onclick="saveNoteMd()">Save Note (.md)</button>
+    <span class="spacer"></span>
+    <button type="button" class="btn-secondary" onclick="clearForm()">Clear Form</button>
+    <button type="button" class="btn-danger" onclick="resetAll()">Reset All</button>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   OB/GYN SOAP Note Generator — plain JavaScript, no template literals.
+   ========================================================= */
+
+var OTHER = 'Other (specify)';
+var STORAGE_KEY = 'obsoap_draft_v1';
+
+/* ---------- tiny DOM helpers ---------- */
+function $(id){ return document.getElementById(id); }
+function el(tag, attrs, children){
+  var e = document.createElement(tag);
+  if(attrs){
+    for(var k in attrs){
+      if(!attrs.hasOwnProperty(k) || attrs[k] === null || attrs[k] === undefined) continue;
+      if(k === 'class') e.className = attrs[k];
+      else if(k === 'text') e.textContent = attrs[k];
+      else if(k.indexOf('on') === 0) e.addEventListener(k.slice(2), attrs[k]);
+      else e.setAttribute(k, attrs[k]);
+    }
+  }
+  if(children !== null && children !== undefined){
+    if(!Array.isArray(children)) children = [children];
+    for(var i=0;i<children.length;i++){
+      var c = children[i];
+      if(c === null || c === undefined || c === false) continue;
+      if(typeof c === 'string') e.appendChild(document.createTextNode(c));
+      else e.appendChild(c);
+    }
+  }
+  return e;
+}
+
+/* ---------- value helpers ---------- */
+var META = {};      // id -> {label, type, def}
+function val(id){
+  var e = $(id);
+  if(!e) return '';
+  return (e.value === null || e.value === undefined) ? '' : String(e.value).trim();
+}
+function vis(id){
+  var e = $(id);
+  if(!e) return false;
+  if(e.closest('.cond-hidden')) return false;
+  return true;
+}
+function V(id){ return vis(id) ? val(id) : ''; }          // visible value
+function Y(id){ return V(id) === 'Yes'; }                 // visible and Yes
+function N(id){ return V(id) === 'No'; }                  // visible and No
+function SV(id){                                          // select value, resolving "Other (specify)"
+  var v = V(id);
+  if(v === OTHER){ var o = V(id + '_other'); return o || 'other'; }
+  return v;
+}
+function num(id){
+  var v = V(id);
+  if(v === '') return null;
+  var n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+function labelOf(id){ return META[id] ? META[id].label : id; }
+
+/* ---------- text helpers ---------- */
+var KEEP_CASE = {'Tdap':1,'Pap':1,'Rh':1,'HbA1c':1,'Zofran':1,'Nexplanon':1,'Depo-Provera':1,'Braxton':1,'Hicks':1};
+function lc(s){
+  if(!s) return '';
+  return String(s).split(' ').map(function(w){
+    var core = w.replace(/[^A-Za-z0-9&\/-]/g,'');
+    if(core.length >= 2 && /^[A-Z0-9&\/-]+$/.test(core) && /[A-Z]/.test(core)) return w;   // acronym (PPH, D&C, GC/CT, COVID-19)
+    if(KEEP_CASE[core]) return w;
+    return w.toLowerCase();
+  }).join(' ');
+}
+function cap(s){ s = String(s||''); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+function joinList(arr, conj){
+  arr = (arr||[]).filter(function(x){ return x !== null && x !== undefined && String(x).trim() !== ''; });
+  conj = conj || 'and';
+  if(arr.length === 0) return '';
+  if(arr.length === 1) return arr[0];
+  if(arr.length === 2) return arr[0] + ' ' + conj + ' ' + arr[1];
+  return arr.slice(0,-1).join(', ') + ', ' + conj + ' ' + arr[arr.length-1];
+}
+function sentence(s){
+  s = String(s||'').trim();
+  if(!s) return '';
+  s = cap(s);
+  if(!/[.!?]$/.test(s)) s += '.';
+  return s;
+}
+function cleanText(t){
+  return String(t||'')
+    .replace(/[ \t]+/g,' ')
+    .replace(/ \./g,'.')
+    .replace(/ ,/g,',')
+    .replace(/\.\.+/g,'.')
+    .replace(/\(\s*\)/g,'')
+    .replace(/ +\n/g,'\n')
+    .replace(/\n{3,}/g,'\n\n')
+    .trim();
+}
+function parseISO(iso){
+  if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+  var p = iso.split('-');
+  var y = parseInt(p[0],10), m = parseInt(p[1],10), d = parseInt(p[2],10);
+  var dt = new Date(y, m-1, d);
+  if(dt.getFullYear() !== y || dt.getMonth() !== m-1 || dt.getDate() !== d) return null;
+  return dt;
+}
+function fmtDate(iso){
+  var d = parseISO(iso);
+  if(!d) return '';
+  return (d.getMonth()+1) + '/' + d.getDate() + '/' + d.getFullYear();
+}
+function todayISO(){
+  var d = new Date();
+  var m = d.getMonth()+1, day = d.getDate();
+  return d.getFullYear() + '-' + (m<10?'0':'') + m + '-' + (day<10?'0':'') + day;
+}
+function daysBetween(a, b){ return Math.round((b.getTime() - a.getTime()) / 86400000); }
+function round1(n){ return Math.round(n*10)/10; }
+
+/* ---------- field definition shorthands ---------- */
+function yn(id, label, opts){
+  var f = {t:'yn', id:id, label:label, def:'No'};
+  if(opts){ for(var k in opts){ if(opts.hasOwnProperty(k)) f[k] = opts[k]; } }
+  return f;
+}
+function sel(id, label, options, opts){
+  var f = {t:'sel', id:id, label:label, opts:options, def:''};
+  if(opts){ for(var k in opts){ if(opts.hasOwnProperty(k)) f[k] = opts[k]; } }
+  return f;
+}
+function txt(id, label, ph){ return {t:'text', id:id, label:label, ph:ph||'', def:''}; }
+function numf(id, label, min, max, step, ph){ return {t:'num', id:id, label:label, min:min, max:max, step:step||'any', ph:ph||'', def:''}; }
+function date(id, label){ return {t:'date', id:id, label:label, def:''}; }
+function area(id, label, ph){ return {t:'area', id:id, label:label, ph:ph||'', def:''}; }
+function grp(when, fields, title){ return {t:'grp', when:when, fields:fields, title:title||''}; }
+function rep(id, title, btn, fields, rowLabel){ return {t:'rep', id:id, title:title, btn:btn, fields:fields, rowLabel:rowLabel||'Entry'}; }
+function sub(label){ return {t:'sub', label:label}; }
+function note(text){ return {t:'note', label:text}; }
+function custom(id, render){ return {t:'custom', id:id, render:render}; }
+
+/* ---------- shared option lists ---------- */
+var ONSET = ['Today','1–2 days ago','This week','1–4 weeks ago','More than 1 month ago','Since early pregnancy',OTHER];
+var DURATION = ['Minutes','Several hours','All day','Days','Constant','Intermittent',OTHER];
+var FREQUENCY = ['Once','Daily','Several times daily','Twice weekly','Several times weekly','Weekly','Occasional','Constant',OTHER];
+var SEVERITY = ['Mild','Moderate','Severe'];
+var LOCATION = ['Right lower quadrant','Left lower quadrant','Bilateral lower abdomen','Suprapubic','Groin','Lower back','Generalized',OTHER];
+var CHARACTER = ['Sharp','Dull','Cramping','Aching','Pressure','Burning','Throbbing',OTHER];
+var AGGRAVATING = ['Prolonged standing','Walking/activity','Lying down','Eating','Palpation','Urination','Intercourse','Bending/lifting',OTHER];
+var RELIEVING = ['Rest','Lying down','Position change','Heat','Acetaminophen','Prescribed medication','Eating','Hydration','Nothing',OTHER];
+var ROUTES = ['PO','IV','IM','SC','PR','PV','Topical','Inhaled',OTHER];
+var MEDFREQ = ['Daily','BID','TID','QID','QHS','Weekly','PRN',OTHER];
+var RELATIVES = ['Mother','Father','Sister','Brother','Maternal grandmother','Maternal grandfather','Paternal grandmother','Paternal grandfather','Aunt','Uncle','Daughter','Son','Multiple relatives',OTHER];
+var REACTIONS = ['Rash/hives','Itching','Swelling/angioedema','Anaphylaxis','Nausea/vomiting','Shortness of breath',OTHER];
+var LABRESULT = ['Pending','Negative/normal','Positive/abnormal',OTHER];
+var YEARS = (function(){ var a=[]; var y=new Date().getFullYear(); for(var i=y;i>=y-60;i--) a.push(String(i)); return a; })();
+
+function symDetailFields(base, isPain){
+  return [
+    sel(base+'_onset','Onset',ONSET),
+    sel(base+'_dur','Duration',DURATION),
+    sel(base+'_freq','Frequency',FREQUENCY),
+    sel(base+'_sev','Severity',SEVERITY),
+    sel(base+'_loc','Location',LOCATION),
+    sel(base+'_char','Character',CHARACTER),
+    sel(base+'_agg','Aggravating factors',AGGRAVATING),
+    sel(base+'_rel','Relieving factors',RELIEVING),
+    txt(base+'_assoc','Associated symptoms','e.g., nausea')
+  ];
+}
+function symptom(id, label, phrase){
+  var base = 'sym_' + id;
+  return [
+    yn(base, label, {phrase: phrase || lc(label)}),
+    grp(base + '=Yes', symDetailFields(base), label + ' details (optional)')
+  ];
+}
+function flatten(arr){
+  var out = [];
+  for(var i=0;i<arr.length;i++){
+    if(Array.isArray(arr[i])) out = out.concat(flatten(arr[i]));
+    else out.push(arr[i]);
+  }
+  return out;
+}
+/* ---------- symptom catalog ---------- */
+var SYMPTOMS = [
+  ['pelvicPain','Pelvic pain'], ['groinPain','Groin pain'], ['abdPain','Abdominal pain'], ['backPain','Back pain'],
+  ['cramping','Cramping'], ['contractions','Contractions'], ['vagBleeding','Vaginal bleeding'], ['vagDischarge','Vaginal discharge'],
+  ['leakage','Leakage of fluid'], ['decFM','Decreased fetal movement'], ['incFM','Increased fetal movement'], ['headache','Headache'],
+  ['blurred','Blurred vision'], ['vision','Vision changes'], ['dizziness','Dizziness'], ['syncope','Syncope'],
+  ['nausea','Nausea'], ['vomiting','Vomiting'], ['heartburn','Heartburn'], ['constipation','Constipation'], ['diarrhea','Diarrhea'],
+  ['urinFreq','Urinary frequency'], ['dysuria','Dysuria'], ['urgency','Urinary urgency'], ['edema','Edema'],
+  ['sob','Shortness of breath'], ['chestPain','Chest pain'], ['palpitations','Palpitations'], ['fever','Fever'], ['chills','Chills'],
+  ['fatigue','Fatigue'], ['itching','Itching']
+];
+var PAIN_SYMPTOMS = ['pelvicPain','groinPain','abdPain','backPain','cramping'];
+
+var PMH_ITEMS = [
+  ['htn','Hypertension'], ['dm','Diabetes'], ['gdm','Gestational diabetes'], ['asthma','Asthma'], ['thyroid','Thyroid disease'],
+  ['anemia','Anemia'], ['heart','Heart disease'], ['kidney','Kidney disease'], ['liver','Liver disease'], ['seizure','Seizure disorder'],
+  ['depression','Depression'], ['anxiety','Anxiety'], ['psych','Other psychiatric condition'], ['blood','Blood disorder'],
+  ['clotting','Clotting disorder'], ['autoimmune','Autoimmune disease'], ['sti','STI history']
+];
+var PSH_ITEMS = [
+  ['csection','Previous C-section'], ['dc','D&C'], ['de','D&E'], ['myomectomy','Myomectomy'], ['leep','LEEP'],
+  ['cone','Cone biopsy'], ['tubal','Tubal surgery'], ['ovarian','Ovarian surgery'], ['pelvic','Other pelvic surgery'], ['other','Other surgery']
+];
+var GYN_ITEMS = [
+  ['fibroids','Uterine fibroids'], ['endometriosis','Endometriosis'], ['pcos','PCOS'], ['cyst','Ovarian cyst'],
+  ['aub','Abnormal uterine bleeding'], ['dysplasia','Cervical dysplasia'], ['endometrial','Endometrial disease'],
+  ['ectopic','Previous ectopic pregnancy'], ['infertility','Infertility'], ['rpl','Recurrent pregnancy loss']
+];
+var QUICK_MEDS = [
+  ['pnv','Prenatal vitamin'], ['iron','Iron'], ['folic','Folic acid'], ['asa','Aspirin'], ['apap','Acetaminophen'],
+  ['ibu','Ibuprofen'], ['oxy','Oxycodone'], ['ond','Ondansetron (Zofran)']
+];
+var ALLERGY_ITEMS = [ ['med','Medication allergy'], ['food','Food allergy'], ['env','Environmental allergy'], ['latex','Latex allergy'], ['other','Other allergy'] ];
+var FH_ITEMS = [
+  ['htn','Hypertension'], ['dm','Diabetes'], ['heart','Heart disease'], ['stroke','Stroke'], ['cancer','Cancer'],
+  ['breastCa','Breast cancer'], ['ovarianCa','Ovarian cancer'], ['uterineCa','Uterine cancer'], ['colonCa','Colon cancer'],
+  ['genetic','Genetic disorders'], ['blood','Blood disorders'], ['clotting','Clotting disorders'],
+  ['pregComp','Pregnancy complications'], ['congenital','Congenital abnormalities'], ['other','Other']
+];
+var ROS_SYSTEMS = [
+  ['General', [['fever','Fever'],['chills','Chills'],['fatigue','Fatigue'],['wtChange','Weight change'],['malaise','Malaise']]],
+  ['HEENT', [['headache','Headache'],['vision','Vision changes'],['blurred','Blurred vision'],['hearing','Hearing changes'],['earPain','Ear pain'],['congestion','Nasal congestion'],['soreThroat','Sore throat'],['dysphagia','Difficulty swallowing']]],
+  ['Cardiovascular', [['chestPain','Chest pain'],['palpitations','Palpitations'],['edema','Edema'],['syncope','Syncope']]],
+  ['Respiratory', [['cough','Cough'],['sob','Shortness of breath'],['wheezing','Wheezing']]],
+  ['GI', [['nausea','Nausea'],['vomiting','Vomiting'],['abdPain','Abdominal pain'],['heartburn','Heartburn'],['constipation','Constipation'],['diarrhea','Diarrhea'],['bloodStool','Blood in stool']]],
+  ['GU', [['dysuria','Dysuria'],['frequency','Frequency'],['urgency','Urgency'],['hematuria','Hematuria'],['pelvicPain','Pelvic pain']]],
+  ['OB/GYN', [['vagBleeding','Vaginal bleeding'],['vagDischarge','Vaginal discharge'],['leakage','Leakage of fluid'],['contractions','Contractions'],['decFM','Decreased fetal movement'],['incFM','Increased fetal movement'],['breastTender','Breast tenderness'],['nippleDischarge','Nipple/breast discharge']]],
+  ['Musculoskeletal', [['backPain','Back pain'],['jointPain','Joint pain'],['musclePain','Muscle pain'],['legCramps','Leg cramps']]],
+  ['Skin', [['rash','Rash'],['itching','Itching'],['lesions','Skin lesions']]],
+  ['Neurologic', [['dizziness','Dizziness'],['weakness','Weakness'],['numbness','Numbness'],['tingling','Tingling'],['seizures','Seizures']]],
+  ['Psychiatric', [['depression','Depression'],['anxiety','Anxiety'],['sleep','Sleep disturbance'],['si','Suicidal ideation']]],
+  ['Endocrine', [['heat','Heat intolerance'],['cold','Cold intolerance'],['thirst','Excessive thirst'],['polyuria','Excessive urination']]],
+  ['Hematologic', [['bruising','Easy bruising'],['bleeding','Easy bleeding'],['lymph','Swollen lymph nodes']]],
+  ['Allergic/Immunologic', [['envAllergy','Environmental allergies'],['foodAllergy','Food allergies'],['medAllergy','Medication allergies']]]
+];
+var LABS = [
+  ['cbc','CBC'], ['cmp','CMP'], ['ua','UA'], ['ucx','Urine culture'], ['gcct','GC/CT'], ['hiv','HIV'], ['syph','Syphilis'],
+  ['hepb','Hepatitis B'], ['hepc','Hepatitis C'], ['gbs','GBS'], ['glucose','Glucose screening'], ['a1c','A1C'], ['pap','Pap'],
+  ['hpv','HPV'], ['us','Ultrasound'], ['nst','NST'], ['otherLab','Other test']
+];
+var PLAN_ITEMS = [
+  ['pnv','Continue prenatal vitamin'], ['iron','Continue iron'], ['folic','Continue folic acid'], ['meds','Continue current medications'],
+  ['medCouns','Medication counseling'], ['nutrition','Nutrition counseling'], ['exercise','Exercise counseling'], ['weight','Weight counseling'],
+  ['bf','Breastfeeding counseling'], ['lactRef','Lactation referral'], ['contra','Contraception counseling'], ['sti','STI counseling'],
+  ['vacc','Vaccination counseling'], ['kick','Kick-count education'], ['labor','Labor precautions reviewed'], ['preE','Preeclampsia precautions reviewed'],
+  ['fm','Fetal movement precautions reviewed'], ['emerg','Emergency precautions reviewed'], ['fu','Follow-up scheduled'], ['referral','Referral needed'],
+  ['us','Ultrasound ordered'], ['labs','Labs ordered'], ['nst','NST ordered'], ['gbs','GBS testing'], ['other','Other plan']
+];
+var COUNSEL_ITEMS = [
+  ['pnv','Prenatal vitamin counseling'], ['iron','Iron counseling'], ['nutrition','Nutrition counseling'], ['exercise','Exercise counseling'],
+  ['weight','Weight gain counseling'], ['vacc','Vaccination counseling'], ['flu','Flu vaccine'], ['tdap','Tdap'], ['rsv','RSV vaccine'],
+  ['covid','COVID vaccine'], ['kick','Kick-count education'], ['labor','Labor precautions'], ['preE','Preeclampsia precautions'], ['fm','Fetal movement precautions']
+];
+var BREAST_ITEMS = [
+  ['pain','Breast pain'], ['lump','Breast lump'], ['discharge','Nipple discharge'], ['mammo','Abnormal mammogram'],
+  ['biopsy','Breast biopsy'], ['cancer','Breast cancer history'], ['bfing','Breastfeeding'], ['plans','Plans to breastfeed']
+];
+var CONTRA_METHODS = [
+  ['condoms','Condoms'], ['cocp','Combined OCP'], ['pop','Progestin-only pill'], ['depo','Depo-Provera'], ['nexplanon','Nexplanon'],
+  ['hiud','Hormonal IUD'], ['ciud','Copper IUD'], ['steril','Sterilization'], ['nfp','Natural family planning'], ['undecided','Undecided']
+];
+
+function mapItems(items, fn){ var out=[]; for(var i=0;i<items.length;i++){ out.push(fn(items[i][0], items[i][1])); } return flatten(out); }
+function medDetailFields(base){
+  return [ txt(base+'_dose','Dose','e.g., 325 mg'), sel(base+'_route','Route',ROUTES), sel(base+'_freq','Frequency',MEDFREQ), txt(base+'_ind','Indication','') ];
+}
+
+/* ---------- section definitions ---------- */
+var SECTIONS = [
+  { id:'sec_pt', title:'Patient Information', fields:[
+      txt('pt_name','Patient name / initials','e.g., J.D.'),
+      date('pt_dob','Date of birth'),
+      numf('pt_age','Age (years)',10,70,1,'auto from DOB'),
+      date('pt_visitDate','Date of visit'),
+      txt('pt_mrn','MRN',''),
+      txt('pt_provider','Provider',''),
+      txt('pt_site','Clinic / site','')
+  ]},
+  { id:'sec_ob', title:'Pregnancy Information', fields:[
+      sel('ob_visit','Visit type',['Initial prenatal','Routine prenatal','Problem visit','Postpartum','Annual GYN','Contraception','Other'],{noBlank:true,def:'Routine prenatal'}),
+      sel('ob_status','Pregnancy status',['Pregnant','Postpartum','Not pregnant'],{noBlank:true,def:'Pregnant'}),
+      txt('ob_cc','Chief concern / reason for visit','optional'),
+      sub('Obstetric summary'),
+      numf('ob_g','Gravida',0,30,1,''), numf('ob_t','Term',0,30,1,''), numf('ob_p','Preterm',0,30,1,''),
+      numf('ob_a','Abortions',0,30,1,''), numf('ob_l','Living',0,30,1,''),
+      custom('ob_gtpal', function(){
+        var w = el('div',{class:'field'},[ el('label',{text:'GTPAL (auto)'}), el('input',{type:'text',id:'ob_gtpal',readonly:'readonly',placeholder:'G_P____'}) ]);
+        META['ob_gtpal'] = {label:'GTPAL',type:'text',def:''}; return w; }),
+      sub('Dating'),
+      date('ob_lmp','LMP'), date('ob_edd','EDD'),
+      numf('ob_gaW','Gestational age — weeks',0,45,1,''), numf('ob_gaD','Gestational age — days',0,6,1,''),
+      custom('ob_calc', function(){
+        return el('div',{class:'field'},[ el('label',{text:' '}), el('button',{type:'button',class:'btn-secondary btn-small',onclick:calcDating,text:'Calculate GA / EDD from dates'}) ]); }),
+      note('GA is calculated from EDD when present, otherwise from LMP, using the date of visit. EDD is filled from LMP + 280 days when blank.'),
+      yn('ob_planned','Pregnancy planned?',{blank:true,def:''}),
+      yn('ob_desired','Pregnancy desired?',{blank:true,def:''}),
+      grp('ob_visit=Postpartum', [ date('ob_delivDate','Delivery date'), sel('ob_delivMode','Delivery type',['Vaginal','Cesarean','Assisted vaginal']), txt('ob_delivComp','Delivery complications','') ], 'Postpartum details')
+  ]},
+  { id:'sec_hx', title:'Previous Pregnancy History', fields:[
+      yn('hx_loss','Previous pregnancy loss?'),
+      grp('hx_loss=Yes', [
+        rep('loss','Pregnancy losses','+ Add Pregnancy Loss', [
+          sel('type','Type',['Miscarriage/spontaneous abortion','Induced abortion','Ectopic pregnancy','Stillbirth',OTHER]),
+          sel('year','Year',YEARS), txt('ga','Gestational age at loss','e.g., 8 weeks'), txt('comp','Complications','')
+        ], 'Loss')
+      ]),
+      yn('hx_children','Previous living children?'),
+      grp('hx_children=Yes', [
+        rep('child','Living children','+ Add Child', [
+          sel('year','Birth year',YEARS), txt('ga','Gestational age at birth','e.g., 39 weeks'), txt('wt','Birth weight','e.g., 7 lb 2 oz'),
+          sel('deliv','Delivery type',['Vaginal','Cesarean','Assisted vaginal']),
+          txt('pregComp','Pregnancy complications',''), txt('delComp','Delivery complications',''), txt('neoComp','Neonatal complications','')
+        ], 'Child')
+      ]),
+      area('hx_notes','Other obstetric history','')
+  ]},
+  { id:'sec_sym', title:'Current Pregnancy Symptoms', fields: flatten([
+      note('Set Yes to reveal optional detail fields. Nothing is required.'),
+      mapItems(SYMPTOMS, function(id,label){ return symptom(id,label); }),
+      area('sym_other','Other symptoms','')
+  ])},
+  { id:'sec_ctx', title:'Contraction Details', when:'sym_contractions=Yes', fields:[
+      sel('ctx_freq','Frequency',['Every <2 min','Every 2–5 min','Every 5–10 min','Every 10–20 min','Every 20–60 min','Fewer than hourly','Irregular/variable',OTHER]),
+      sel('ctx_dur','Duration',['<30 sec','30–60 sec','60–90 sec','>90 sec',OTHER]),
+      sel('ctx_reg','Regular or irregular',['Regular','Irregular']),
+      yn('ctx_intensity','Increasing in intensity?'),
+      yn('ctx_painful','Painful?'),
+      yn('ctx_bh','Braxton Hicks suspected?')
+  ]},
+  { id:'sec_fa', title:'Fetal Assessment', fields:[
+      yn('fa_fm','Fetal movement',{def:'Yes'}),
+      numf('fa_fmCount','Fetal movements / day',0,500,1,''),
+      numf('fa_fhr','FHR (bpm)',0,300,1,''),
+      numf('fa_fh','Fundal height (cm)',0,60,0.5,''),
+      sel('fa_pres','Presentation',['Cephalic','Breech','Transverse','Unknown']),
+      sel('fa_pos','Fetal position',['LOA','ROA','LOP','ROP','LOT','ROT','OA','OP','Unknown',OTHER]),
+      yn('fa_nst','NST performed?'),
+      grp('fa_nst=Yes',[ sel('fa_nstResult','NST result',['Reactive','Non-reactive','Equivocal']) ]),
+      yn('fa_kick','Kick counts discussed?')
+  ]},
+  { id:'sec_vs', title:'Vital Signs', fields:[
+      custom('vs_wtWrap', function(){
+        META['vs_wt']={label:'Weight',type:'num',def:''}; META['vs_wtUnit']={label:'Weight unit',type:'sel',def:'lb'};
+        return el('div',{class:'field'},[ el('label',{text:'Weight'}), el('div',{class:'unitrow'},[
+          el('input',{type:'number',id:'vs_wt',min:'0',step:'any',placeholder:'195.9'}),
+          el('select',{id:'vs_wtUnit'},[ el('option',{text:'lb'}), el('option',{text:'kg'}) ]) ]) ]); }),
+      custom('vs_htWrap', function(){
+        META['vs_htFt']={label:'Height (ft)',type:'num',def:''}; META['vs_htIn']={label:'Height (in)',type:'num',def:''};
+        META['vs_htCm']={label:'Height (cm)',type:'num',def:''}; META['vs_htUnit']={label:'Height unit',type:'sel',def:'ft/in'};
+        return el('div',{class:'field'},[ el('label',{text:'Height'}), el('div',{class:'unitrow'},[
+          el('input',{type:'number',id:'vs_htFt',min:'0',max:'8',step:'1',placeholder:'ft','data-when':'vs_htUnit=ft/in'}),
+          el('input',{type:'number',id:'vs_htIn',min:'0',max:'11.9',step:'any',placeholder:'in','data-when':'vs_htUnit=ft/in'}),
+          el('input',{type:'number',id:'vs_htCm',min:'0',max:'250',step:'any',placeholder:'cm','data-when':'vs_htUnit=cm'}),
+          el('select',{id:'vs_htUnit'},[ el('option',{text:'ft/in'}), el('option',{text:'cm'}) ]) ]) ]); }),
+      custom('vs_bmiWrap', function(){
+        META['vs_bmi']={label:'BMI',type:'text',def:''};
+        return el('div',{class:'field'},[ el('label',{text:'BMI (auto)'}), el('input',{type:'text',id:'vs_bmi',readonly:'readonly',placeholder:'calculated'}) ]); }),
+      custom('vs_bpWrap', function(){
+        META['vs_sys']={label:'BP systolic',type:'num',def:''}; META['vs_dia']={label:'BP diastolic',type:'num',def:''};
+        return el('div',{class:'field'},[ el('label',{text:'Blood pressure (mmHg)'}), el('div',{class:'unitrow'},[
+          el('input',{type:'number',id:'vs_sys',min:'0',step:'1',placeholder:'systolic'}), el('span',{text:'/',style:'align-self:center'}),
+          el('input',{type:'number',id:'vs_dia',min:'0',step:'1',placeholder:'diastolic'}) ]), el('div',{class:'inline-warn',id:'vs_bpWarn'}) ]); }),
+      numf('vs_hr','Pulse (bpm)',0,250,1,''),
+      numf('vs_rr','Respiratory rate',0,60,1,''),
+      custom('vs_tempWrap', function(){
+        META['vs_temp']={label:'Temperature',type:'num',def:''}; META['vs_tempUnit']={label:'Temp unit',type:'sel',def:'°F'};
+        return el('div',{class:'field'},[ el('label',{text:'Temperature'}), el('div',{class:'unitrow'},[
+          el('input',{type:'number',id:'vs_temp',min:'0',step:'any',placeholder:'98.6'}),
+          el('select',{id:'vs_tempUnit'},[ el('option',{text:'°F'}), el('option',{text:'°C'}) ]) ]) ]); }),
+      numf('vs_spo2','SpO2 (%)',0,100,1,'')
+  ]},
+  { id:'sec_pe', title:'OB/GYN Physical Exam', fields:[
+      sel('pe_general','General appearance',['Well-appearing, no acute distress','Mild distress','Moderate distress','Acute distress',OTHER]),
+      yn('pe_abdTender','Abdominal tenderness'), yn('pe_utTender','Uterine tenderness'), yn('pe_pelvTender','Pelvic tenderness'),
+      yn('pe_cva','CVA tenderness'), yn('pe_edema','Edema'),
+      grp('pe_edema=Yes',[ sel('pe_edemaGrade','Edema grade',['Trace','1+','2+','3+','4+']), sel('pe_edemaLoc','Edema location',['Bilateral lower extremities','Unilateral lower extremity','Hands/face','Generalized',OTHER]) ]),
+      yn('pe_fhAppropriate','Fundal height appropriate for gestational age',{def:'Yes'}),
+      yn('pe_fht','Fetal heart tones present',{def:'Yes'}),
+      yn('pe_fmPresent','Fetal movement present on exam',{def:'Yes'}),
+      sub('Pelvic exam'),
+      yn('pe_pelvicDone','Pelvic exam performed?'),
+      grp('pe_pelvicDone=Yes',[
+        yn('pe_vulvaNl','Vulva normal',{def:'Yes'}), yn('pe_vagNl','Vaginal mucosa normal',{def:'Yes'}), yn('pe_cxNl','Cervical appearance normal',{def:'Yes'}),
+        yn('pe_cxBleed','Cervical bleeding'), yn('pe_vagBleed','Vaginal bleeding'), yn('pe_vagDisch','Vaginal discharge'),
+        grp('pe_vagDisch=Yes',[ sel('pe_dischChar','Discharge character',['Thin white','Thick white','Yellow/green','Gray','Bloody','Mucoid',OTHER]) ])
+      ]),
+      sub('Cervical exam'),
+      yn('pe_cxDone','Cervical exam performed?'),
+      grp('pe_cxDone=Yes',[
+        sel('pe_dil','Dilation',['Closed','Fingertip','1 cm','2 cm','3 cm','4 cm','5 cm','6 cm','7 cm','8 cm','9 cm','10 cm (complete)']),
+        sel('pe_eff','Effacement',['0%','25%','50%','60%','70%','80%','90%','100%']),
+        sel('pe_station','Station',['-3','-2','-1','0','+1','+2','+3','Unknown']),
+        sel('pe_cxPres','Presentation',['Cephalic/vertex','Breech','Transverse','Unknown'])
+      ]),
+      area('pe_notes','Additional examination findings','')
+  ]},
+  { id:'sec_pmh', title:'Past Medical History', fields: flatten([
+      mapItems(PMH_ITEMS, function(id,label){ return yn('pmh_'+id,label); }),
+      yn('pmh_other','Other medical conditions'),
+      grp('pmh_other=Yes',[ txt('pmh_otherText','Specify other conditions','') ]),
+      area('pmh_notes','PMH free text','')
+  ])},
+  { id:'sec_psh', title:'Surgical History', fields: flatten([
+      mapItems(PSH_ITEMS, function(id,label){
+        var base='psh_'+id;
+        return [ yn(base,label), grp(base+'=Yes',[ txt(base+'_proc','Procedure',label.replace('Previous ','')), sel(base+'_year','Year',YEARS), txt(base+'_comp','Complications','') ], label + ' details') ];
+      }),
+      area('psh_notes','Surgical history free text','')
+  ])}
+];
+SECTIONS = SECTIONS.concat([
+  { id:'sec_gyn', title:'Gynecologic History', fields: flatten([
+      mapItems(GYN_ITEMS, function(id,label){ return yn('gyn_'+id,label); }),
+      yn('gyn_other','Other GYN condition'),
+      grp('gyn_other=Yes',[ txt('gyn_otherText','Specify condition','') ]),
+      grp('gyn_fibroids=Yes',[
+        sel('fib_num','Number of fibroids',['1','2','3','Multiple','Unknown']),
+        sel('fib_size','Size (largest)',['<2 cm','2–5 cm','5–10 cm','>10 cm','Unknown',OTHER]),
+        sel('fib_loc','Location',['Intramural','Subserosal','Submucosal','Pedunculated','Multiple locations','Unknown',OTHER]),
+        txt('fib_sx','Symptoms attributed to fibroids','e.g., pelvic pressure'),
+        sel('fib_tx','Treatment',['None','Medical management','Prior myomectomy','Prior uterine artery embolization',OTHER]),
+        yn('fib_imaging','Previous imaging?'),
+        grp('fib_imaging=Yes',[ txt('fib_imagingDetail','Imaging details','e.g., US 2025: 4 cm intramural') ]),
+        yn('fib_myomectomy','Previous myomectomy?')
+      ],'Fibroid details'),
+      area('gyn_notes','GYN history free text','')
+  ])},
+  { id:'sec_mh', title:'Menstrual History', fields:[
+      numf('mh_menarche','Age at menarche',6,25,1,''),
+      date('mh_lmp','LMP'),
+      sel('mh_cycleLen','Cycle length',['<21 days','21–24 days','25–28 days','29–32 days','33–35 days','>35 days','Irregular']),
+      sel('mh_cycleDur','Cycle duration (bleeding days)',['1–2 days','3–5 days','6–7 days','>7 days']),
+      yn('mh_regular','Regular cycles?',{def:'Yes'}),
+      yn('mh_heavy','Heavy bleeding?'),
+      yn('mh_dysmen','Dysmenorrhea?'),
+      yn('mh_menopause','Menopause?'),
+      grp('mh_menopause=Yes',[ numf('mh_menoAge','Age at menopause',30,70,1,'') ])
+  ]},
+  { id:'sec_pap', title:'Pap / Cervical Screening', fields:[
+      date('pap_date','Last Pap date'),
+      sel('pap_result','Pap result',['Normal (NILM)','ASC-US','ASC-H','LSIL','HSIL','AGC','Unsatisfactory','Unknown/not available']),
+      sel('pap_hpv','HPV result',['Negative','Positive (other high-risk)','Positive HPV 16/18','Not performed','Unknown']),
+      yn('pap_vacc','HPV vaccination?'),
+      grp('pap_vacc=Yes',[ sel('pap_doses','Number of HPV vaccine doses',['1','2','3','Unknown']) ]),
+      yn('pap_abnHx','History of abnormal Pap?'),
+      yn('pap_leep','Previous LEEP?'),
+      yn('pap_colpo','Previous colposcopy?'),
+      yn('pap_biopsy','Previous cervical biopsy?')
+  ]},
+  { id:'sec_med', title:'Medications', fields: flatten([
+      sub('Quick medications'),
+      mapItems(QUICK_MEDS, function(id,label){ var base='med_'+id; return [ yn(base,label), grp(base+'=Yes', medDetailFields(base), label + ' details') ]; }),
+      yn('med_otherQuick','Other medication'),
+      grp('med_otherQuick=Yes', [ txt('med_otherQuick_name','Medication name','') ].concat(medDetailFields('med_otherQuick')), 'Other medication details'),
+      sub('Additional medications'),
+      rep('rx','Medication list','+ Add Medication', [
+        txt('name','Medication name',''), txt('dose','Dose',''), sel('route','Route',ROUTES), sel('freq','Frequency',MEDFREQ), txt('ind','Indication','')
+      ], 'Medication')
+  ])},
+  { id:'sec_al', title:'Allergies', fields: flatten([
+      yn('al_nkda','No known drug allergies'),
+      mapItems(ALLERGY_ITEMS, function(id,label){ var base='al_'+id; return [ yn(base,label), grp(base+'=Yes',[ txt(base+'_allergen','Allergen',''), sel(base+'_reaction','Reaction',REACTIONS) ], label + ' details') ]; }),
+      area('al_notes','Allergy free text','')
+  ])},
+  { id:'sec_sh', title:'Social History', fields:[
+      sub('Tobacco'),
+      sel('sh_smoke','Smoking status',['Never smoker','Former smoker','Current smoker']),
+      grp('sh_smoke=Current smoker',[ numf('sh_cigs','Cigarettes / day',0,100,1,''), numf('sh_years','Years smoked',0,70,1,'') ]),
+      grp('sh_smoke=Former smoker',[ numf('sh_yearsFormer','Years smoked',0,70,1,''), sel('sh_quitYear','Quit year',YEARS) ]),
+      sub('Alcohol'),
+      yn('sh_alcohol','Alcohol use'),
+      grp('sh_alcohol=Yes',[ sel('sh_alcFreq','Frequency',['Rarely','Monthly','Weekly','Several times weekly','Daily']), txt('sh_alcAmt','Amount','e.g., 1 glass wine') ]),
+      sub('Recreational drugs'),
+      yn('sh_drugs','Drug use'),
+      grp('sh_drugs=Yes',[ sel('sh_drugType','Type',['Marijuana/cannabis','Cocaine','Methamphetamine','Opioids','Benzodiazepines',OTHER]), sel('sh_drugFreq','Frequency',['Rarely','Monthly','Weekly','Several times weekly','Daily']) ]),
+      sub('Caffeine'),
+      yn('sh_caffeine','Caffeine use'),
+      grp('sh_caffeine=Yes',[ sel('sh_caffAmt','Amount / day',['1 cup/day','2 cups/day','3+ cups/day',OTHER]) ]),
+      sub('Lifestyle'),
+      txt('sh_occupation','Occupation',''),
+      yn('sh_exercise','Regular exercise'),
+      grp('sh_exercise=Yes',[ txt('sh_exerciseDetail','Type / frequency','e.g., walking 30 min, 3x/week') ]),
+      txt('sh_diet','Diet','e.g., balanced, vegetarian'),
+      sub('Sexual history'),
+      yn('sh_sexActive','Sexually active'), yn('sh_newPartner','New partner'), numf('sh_partners','Number of partners (past year)',0,100,1,''),
+      yn('sh_stiConcern','STI concern'), yn('sh_stiTest','STI testing requested'),
+      sub('Safety'),
+      yn('sh_safe','Feels safe at home',{def:'Yes'}), yn('sh_ipv','IPV concern')
+  ]},
+  { id:'sec_fh', title:'Family History', fields: flatten([
+      mapItems(FH_ITEMS, function(id,label){
+        var base='fh_'+id;
+        var det=[ sel(base+'_rel','Relative',RELATIVES), numf(base+'_age','Age diagnosed',0,110,1,''), txt(base+'_det','Details','') ];
+        if(id==='other' || id==='cancer' || id==='genetic' || id==='pregComp' || id==='congenital') det.unshift(txt(base+'_cond','Condition',''));
+        return [ yn(base,label), grp(base+'=Yes',det,label + ' details') ];
+      })
+  ])},
+  { id:'sec_ros', title:'Complete Review of Systems', fields: flatten([
+      note('All items default to No. Only positives are written into the note; otherwise "ROS negative except as noted above."'),
+      ROS_SYSTEMS.map(function(sys){ return [ sub(sys[0]) ].concat(sys[1].map(function(it){ return yn('ros_'+it[0], it[1], {system:sys[0]}); })); }),
+      area('ros_other','Other ROS','')
+  ])},
+  { id:'sec_br', title:'Breast History', fields: mapItems(BREAST_ITEMS, function(id,label){ return yn('br_'+id,label); }) },
+  { id:'sec_cn', title:'Current Pregnancy Counseling', fields: mapItems(COUNSEL_ITEMS, function(id,label){ return yn('cn_'+id,label); }) },
+  { id:'sec_dp', title:'Delivery / Breastfeeding Plan', fields:[
+      yn('dp_bf','Plans to breastfeed',{blank:true,def:''}),
+      yn('dp_formula','Plans to formula feed',{blank:true,def:''}),
+      yn('dp_lact','Lactation counseling requested'),
+      sel('dp_mode','Desired delivery',['Vaginal','Cesarean','No preference']),
+      sel('dp_pain','Desired labor pain management',['None','Epidural','IV medication','Unsure']),
+      area('dp_plan','Birth plan','')
+  ]},
+  { id:'sec_cx', title:'Postpartum Contraception', fields: flatten([
+      yn('cx_want','Would like postpartum contraception counseling?'),
+      grp('cx_want=Yes', flatten([ note('Methods of interest'), mapItems(CONTRA_METHODS, function(id,label){ return yn('cx_'+id,label); }) ]), 'Methods discussed / of interest'),
+      yn('cx_provided','Counseling provided?')
+  ])},
+  { id:'sec_lab', title:'Labs / Testing', fields: flatten([
+      mapItems(LABS, function(id,label){
+        var base='lab_'+id;
+        var det=[ sel(base+'_result','Result',LABRESULT), txt(base+'_detail','Result details / value',''), date(base+'_date','Date') ];
+        if(id==='otherLab') det.unshift(txt(base+'_name','Test name',''));
+        return [ yn(base, label + ' ordered / performed?'), grp(base+'=Yes',det,label) ];
+      })
+  ])},
+  { id:'sec_pl', title:'Plan', fields: flatten([
+      mapItems(PLAN_ITEMS, function(id,label){ return yn('pl_'+id,label); }),
+      grp('pl_fu=Yes',[ sel('pl_fuWhen','Follow-up interval',['1 week','2 weeks','4 weeks','6 weeks','Postpartum visit','As needed',OTHER]) ]),
+      grp('pl_referral=Yes',[ txt('pl_referralTo','Referral to','e.g., MFM, lactation, social work') ]),
+      grp('pl_other=Yes',[ txt('pl_otherText','Other plan item','') ]),
+      area('pl_notes','Additional plan / free text','')
+  ])}
+]);
+/* ---------- rendering ---------- */
+var REPS = {};   // groupId -> {def, counter}
+function registerMeta(id, f){ META[id] = {label:f.label, type:f.t, def:(f.def === undefined ? '' : f.def), phrase:f.phrase, system:f.system}; }
+
+function renderFields(fields, prefix){
+  var frag = document.createDocumentFragment();
+  for(var i=0;i<fields.length;i++){ var n = renderField(fields[i], prefix); if(n) frag.appendChild(n); }
+  return frag;
+}
+function renderField(f, prefix){
+  prefix = prefix || '';
+  var id = f.id ? prefix + f.id : '';
+  var wrap, input, i;
+  switch(f.t){
+    case 'sub': return el('div',{class:'subhead',text:f.label});
+    case 'note': return el('p',{class:'note',text:f.label});
+    case 'custom': return f.render();
+    case 'yn':
+      registerMeta(id, f);
+      input = el('select',{id:id});
+      if(f.blank) input.appendChild(el('option',{value:'',text:'—'}));
+      input.appendChild(el('option',{value:'No',text:'No'}));
+      input.appendChild(el('option',{value:'Yes',text:'Yes'}));
+      input.value = f.def || (f.blank ? '' : 'No');
+      wrap = el('div',{class:'field yn' + (input.value==='Yes'?' is-yes':'')},[ el('label',{for:id,text:f.label}), input ]);
+      return wrap;
+    case 'sel':
+      registerMeta(id, f);
+      input = el('select',{id:id});
+      if(!f.noBlank) input.appendChild(el('option',{value:'',text:'—'}));
+      for(i=0;i<f.opts.length;i++) input.appendChild(el('option',{value:f.opts[i],text:f.opts[i]}));
+      if(f.def) input.value = f.def;
+      wrap = el('div',{class:'field'},[ el('label',{for:id,text:f.label}), input ]);
+      if(f.opts.indexOf(OTHER) >= 0){
+        META[id+'_other'] = {label:f.label + ' (other)', type:'text', def:''};
+        wrap.appendChild(el('input',{type:'text',id:id+'_other',placeholder:'Specify…','data-when':id+'='+OTHER}));
+      }
+      return wrap;
+    case 'text':
+      registerMeta(id, f);
+      return el('div',{class:'field'},[ el('label',{for:id,text:f.label}), el('input',{type:'text',id:id,placeholder:f.ph}) ]);
+    case 'num':
+      registerMeta(id, f);
+      return el('div',{class:'field'},[ el('label',{for:id,text:f.label}), el('input',{type:'number',id:id,min:f.min,max:f.max,step:f.step,placeholder:f.ph}) ]);
+    case 'date':
+      registerMeta(id, f);
+      return el('div',{class:'field'},[ el('label',{for:id,text:f.label}), el('input',{type:'date',id:id,min:'1900-01-01',max:'2100-12-31'}) ]);
+    case 'area':
+      registerMeta(id, f);
+      return el('div',{class:'field wide'},[ el('label',{for:id,text:f.label}), el('textarea',{id:id,placeholder:f.ph}) ]);
+    case 'grp':
+      wrap = el('div',{class:'group','data-when':prefix + f.when});
+      if(f.title) wrap.appendChild(el('div',{class:'gtitle',text:f.title}));
+      var g = el('div',{class:'grid'}); g.appendChild(renderFields(f.fields, prefix)); wrap.appendChild(g);
+      return wrap;
+    case 'rep':
+      REPS[f.id] = {def:f, counter:0};
+      wrap = el('div',{class:'repeat',id:'rep_'+f.id},[
+        el('div',{class:'rtitle',text:f.title}),
+        el('div',{id:'rows_'+f.id}),
+        el('button',{type:'button',class:'btn-add btn-small',text:f.btn,onclick:(function(gid){ return function(){ addRow(gid); }; })(f.id)})
+      ]);
+      return wrap;
+  }
+  return null;
+}
+function addRow(gid, values){
+  var r = REPS[gid]; if(!r) return null;
+  r.counter += 1;
+  var idx = r.counter;
+  var prefix = gid + '_' + idx + '_';
+  var row = el('div',{class:'rrow','data-rep':gid,'data-idx':idx});
+  row.appendChild(el('div',{class:'rlabel',text:r.def.rowLabel + ' ' + ($('rows_'+gid).children.length + 1)}));
+  row.appendChild(el('button',{type:'button',class:'rmv',text:'Remove',onclick:function(){ row.parentNode.removeChild(row); renumberRows(gid); afterChange(); }}));
+  var g = el('div',{class:'grid'}); g.appendChild(renderFields(r.def.fields, prefix)); row.appendChild(g);
+  $('rows_'+gid).appendChild(row);
+  if(values){ for(var k in values){ if(values.hasOwnProperty(k) && $(prefix+k)) $(prefix+k).value = values[k]; } }
+  updateConditionals();
+  return row;
+}
+function renumberRows(gid){
+  var rows = $('rows_'+gid).children;
+  for(var i=0;i<rows.length;i++){ var l = rows[i].querySelector('.rlabel'); if(l) l.textContent = REPS[gid].def.rowLabel + ' ' + (i+1); }
+}
+function getRows(gid){
+  var out = [];
+  var rows = $('rows_'+gid) ? $('rows_'+gid).children : [];
+  for(var i=0;i<rows.length;i++){
+    var idx = rows[i].getAttribute('data-idx');
+    var prefix = gid + '_' + idx + '_';
+    var obj = {}; var any = false;
+    REPS[gid].def.fields.forEach(function(f){
+      if(!f.id) return;
+      var v = SV(prefix + f.id);
+      obj[f.id] = v; if(v) any = true;
+    });
+    obj._any = any;
+    out.push(obj);
+  }
+  return out;
+}
+function clearRows(gid){ var c = $('rows_'+gid); if(c) c.innerHTML = ''; if(REPS[gid]) REPS[gid].counter = 0; }
+
+function renderSections(){
+  var form = $('form');
+  SECTIONS.forEach(function(s){
+    var d = el('details',{class:'card',id:s.id,open:'open'});
+    if(s.when) d.setAttribute('data-when', s.when);
+    d.appendChild(el('summary',null,[ s.title, el('span',{class:'count',id:s.id+'_count'}) ]));
+    var body = el('div',{class:'body'}); var g = el('div',{class:'grid'});
+    g.appendChild(renderFields(s.fields, ''));
+    body.appendChild(g); d.appendChild(body); form.appendChild(d);
+  });
+}
+function toggleAll(open){
+  var ds = document.querySelectorAll('details.card');
+  for(var i=0;i<ds.length;i++) ds[i].open = open;
+}
+
+/* ---------- conditionals ---------- */
+function evalWhen(expr){
+  var neg = expr.indexOf('!=') >= 0;
+  var parts = neg ? expr.split('!=') : expr.split('=');
+  var id = parts[0]; var wanted = parts.slice(1).join('=').split('|');
+  var v = val(id);
+  var match = wanted.indexOf(v) >= 0;
+  return neg ? !match : match;
+}
+function updateConditionals(){
+  var nodes = document.querySelectorAll('[data-when]');
+  for(var i=0;i<nodes.length;i++){
+    var show = evalWhen(nodes[i].getAttribute('data-when'));
+    if(show) nodes[i].classList.remove('cond-hidden'); else nodes[i].classList.add('cond-hidden');
+  }
+  var yns = document.querySelectorAll('.field.yn select');
+  for(var j=0;j<yns.length;j++){
+    if(yns[j].value === 'Yes') yns[j].parentNode.classList.add('is-yes'); else yns[j].parentNode.classList.remove('is-yes');
+  }
+  updateCounts();
+}
+function updateCounts(){
+  SECTIONS.forEach(function(s){
+    var c = $(s.id+'_count'); if(!c) return;
+    var n = 0;
+    var sels = $(s.id).querySelectorAll('.field.yn select');
+    for(var i=0;i<sels.length;i++){ if(sels[i].value === 'Yes' && !sels[i].closest('.cond-hidden')) n++; }
+    c.textContent = n ? n + ' Yes' : '';
+  });
+}
+
+/* ---------- derived values ---------- */
+function weightKg(){ var w = num('vs_wt'); if(w === null) return null; return val('vs_wtUnit') === 'kg' ? w : w * 0.45359237; }
+function heightCm(){
+  if(val('vs_htUnit') === 'cm'){ var c = num('vs_htCm'); return c === null ? null : c; }
+  var ft = num('vs_htFt'), inch = num('vs_htIn');
+  if(ft === null && inch === null) return null;
+  return ((ft||0) * 12 + (inch||0)) * 2.54;
+}
+function bmi(){
+  var kg = weightKg(), cm = heightCm();
+  if(kg === null || cm === null || cm <= 0) return null;
+  return round1(kg / Math.pow(cm/100, 2));
+}
+function tempF(){
+  var t = num('vs_temp'); if(t === null) return null;
+  return val('vs_tempUnit') === '°C' ? t * 9/5 + 32 : t;
+}
+function computeDerived(){
+  var b = bmi(); if($('vs_bmi')) $('vs_bmi').value = b === null ? '' : String(b);
+  // GTPAL
+  var g = val('ob_g'), t = val('ob_t'), p = val('ob_p'), a = val('ob_a'), l = val('ob_l');
+  var s = '';
+  if(g !== '') s = 'G' + g;
+  if(t !== '' || p !== '' || a !== '' || l !== '') s += 'P' + (t||'0') + (p||'0') + (a||'0') + (l||'0');
+  if($('ob_gtpal')) $('ob_gtpal').value = s;
+  // age from DOB
+  var dob = parseISO(val('pt_dob')); var vd = parseISO(val('pt_visitDate')) || new Date();
+  if(dob && $('pt_age') && document.activeElement !== $('pt_age')){
+    var age = vd.getFullYear() - dob.getFullYear();
+    var mdiff = vd.getMonth() - dob.getMonth();
+    if(mdiff < 0 || (mdiff === 0 && vd.getDate() < dob.getDate())) age--;
+    if(age >= 0 && age < 130) $('pt_age').value = String(age);
+  }
+  // BP inline warning
+  var sys = num('vs_sys'), dia = num('vs_dia'); var w = $('vs_bpWarn');
+  if(w){
+    w.textContent = ''; w.classList.remove('red');
+    if(sys !== null || dia !== null){
+      if((sys !== null && sys >= 160) || (dia !== null && dia >= 110)){ w.textContent = 'Severe-range blood pressure — potential urgent finding; evaluate according to clinical protocol.'; w.classList.add('red'); }
+      else if((sys !== null && sys >= 140) || (dia !== null && dia >= 90)){ w.textContent = 'Elevated blood pressure (≥140/90).'; }
+      else if((sys !== null && sys < 90) || (dia !== null && dia < 50)){ w.textContent = 'Low blood pressure reading — verify.'; }
+    }
+  }
+  // auto pregnancy status from visit type
+  var visit = val('ob_visit');
+  if(visit === 'Postpartum' && val('ob_status') === 'Pregnant' && lastVisitType !== visit) $('ob_status').value = 'Postpartum';
+  else if((visit === 'Annual GYN' || visit === 'Contraception') && val('ob_status') === 'Pregnant' && lastVisitType !== visit) $('ob_status').value = 'Not pregnant';
+  else if((visit === 'Initial prenatal' || visit === 'Routine prenatal' || visit === 'Problem visit') && lastVisitType !== visit && lastVisitType !== null) $('ob_status').value = 'Pregnant';
+  lastVisitType = visit;
+}
+var lastVisitType = null;
+
+function calcDating(){
+  var visit = parseISO(val('pt_visitDate')) || new Date();
+  var lmp = parseISO(val('ob_lmp')), edd = parseISO(val('ob_edd'));
+  if(!lmp && !edd){ toast('Enter an LMP or EDD first.'); return; }
+  if(lmp && !edd){
+    var e = new Date(lmp.getTime()); e.setDate(e.getDate() + 280);
+    var m = e.getMonth()+1, d = e.getDate();
+    $('ob_edd').value = e.getFullYear() + '-' + (m<10?'0':'') + m + '-' + (d<10?'0':'') + d;
+    edd = e;
+  }
+  var gaDays = edd ? 280 - daysBetween(visit, edd) : daysBetween(lmp, visit);
+  if(gaDays < 0 || gaDays > 45*7){ toast('Calculated gestational age is out of range — check the dates.'); return; }
+  $('ob_gaW').value = String(Math.floor(gaDays/7));
+  $('ob_gaD').value = String(gaDays % 7);
+  afterChange();
+  toast('Gestational age calculated: ' + gaStr());
+}
+
+/* ---------- autosave ---------- */
+var saveTimer = null;
+function afterChange(){
+  updateConditionals();
+  computeDerived();
+  showLiveWarnings();
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveDraft, 400);
+}
+function collectAll(){
+  var data = {fields:{}, rows:{}};
+  var inputs = document.querySelectorAll('#form input, #form select, #form textarea');
+  for(var i=0;i<inputs.length;i++){
+    var e = inputs[i];
+    if(!e.id || e.closest('.rrow') || e.readOnly) continue;
+    data.fields[e.id] = e.value;
+  }
+  for(var gid in REPS){
+    if(!REPS.hasOwnProperty(gid)) continue;
+    var rows = $('rows_'+gid).children; var arr = [];
+    for(var r=0;r<rows.length;r++){
+      var idx = rows[r].getAttribute('data-idx'); var obj = {};
+      REPS[gid].def.fields.forEach(function(f){ if(f.id){ obj[f.id] = val(gid+'_'+idx+'_'+f.id); if($(gid+'_'+idx+'_'+f.id+'_other')) obj[f.id+'_other'] = val(gid+'_'+idx+'_'+f.id+'_other'); } });
+      arr.push(obj);
+    }
+    data.rows[gid] = arr;
+  }
+  return data;
+}
+function saveDraft(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(collectAll()));
+    var s = $('saveStatus'); if(s) s.textContent = 'Draft saved ' + new Date().toLocaleTimeString() + '.';
+  }catch(e){ /* storage unavailable: ignore */ }
+}
+function applyData(data){
+  if(!data) return;
+  for(var gid in REPS){ if(REPS.hasOwnProperty(gid)) clearRows(gid); }
+  if(data.rows){ for(var g in data.rows){ if(data.rows.hasOwnProperty(g) && REPS[g]){ data.rows[g].forEach(function(obj){ addRow(g, obj); }); } } }
+  if(data.fields){ for(var id in data.fields){ if(data.fields.hasOwnProperty(id) && $(id)) $(id).value = data.fields[id]; } }
+  lastVisitType = val('ob_visit');
+  updateConditionals(); computeDerived(); showLiveWarnings();
+}
+function restoreDraft(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    var data = JSON.parse(raw);
+    applyData(data);
+    return true;
+  }catch(e){ return false; }
+}
+function toast(msg){
+  var t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+}
+/* ---------- pregnancy context ---------- */
+function isPregnant(){ return V('ob_status') === 'Pregnant'; }
+function isPostpartum(){ return V('ob_status') === 'Postpartum' || V('ob_visit') === 'Postpartum'; }
+function gaWeeks(){ return num('ob_gaW'); }
+function gaStr(){
+  var w = num('ob_gaW'), d = num('ob_gaD');
+  if(w === null) return '';
+  return w + 'w' + (d === null ? 0 : d) + 'd';
+}
+function trimester(){
+  var w = gaWeeks(); if(w === null) return 0;
+  if(w < 14) return 1; if(w < 28) return 2; return 3;
+}
+function ageYears(){
+  var a = num('pt_age'); if(a !== null) return a;
+  return null;
+}
+
+/* ---------- validation ---------- */
+function checkDate(id, label, errors, warnings, opts){
+  var e = $(id); if(!e || !vis(id)) return null;
+  if(e.validity && e.validity.badInput){ errors.push(label + ': not a valid calendar date.'); return null; }
+  var v = val(id); if(!v) return null;
+  var d = parseISO(v);
+  if(!d){ errors.push(label + ': "' + v + '" is not a real calendar date.'); return null; }
+  var y = d.getFullYear();
+  if(y < 1900 || y > 2100){ errors.push(label + ': year must be between 1900 and 2100.'); return null; }
+  if(opts && opts.notFuture && d.getTime() > Date.now() + 86400000*366){ warnings.push(label + ' is more than a year in the future.'); }
+  return d;
+}
+function checkRange(id, label, min, max, errors, warnings, warnMin, warnMax){
+  var n = num(id); if(n === null){ var raw = V(id); if(raw !== '' && isNaN(parseFloat(raw))) errors.push(label + ': must be a number.'); return null; }
+  if(n < 0){ errors.push(label + ': negative values are not allowed.'); return null; }
+  if(n < min || n > max){ errors.push(label + ': ' + n + ' is outside the accepted range (' + min + '–' + max + ').'); return null; }
+  if(warnMin !== undefined && (n < warnMin || n > warnMax)) warnings.push(label + ' of ' + n + ' is outside the expected range (' + warnMin + '–' + warnMax + ').');
+  return n;
+}
+function validate(){
+  var errors = [], warnings = [];
+  var visit = checkDate('pt_visitDate','Date of visit',errors,warnings) || new Date();
+  var dob = checkDate('pt_dob','Date of birth',errors,warnings);
+  if(dob && dob.getTime() > Date.now()) errors.push('Date of birth cannot be in the future.');
+  var lmp = checkDate('ob_lmp','LMP',errors,warnings);
+  if(lmp && lmp.getTime() > visit.getTime()) errors.push('LMP cannot be after the date of visit.');
+  var edd = checkDate('ob_edd','EDD',errors,warnings);
+  if(edd && Math.abs(daysBetween(visit, edd)) > 370) warnings.push('EDD is more than a year from the visit date — verify.');
+  checkDate('mh_lmp','Menstrual LMP',errors,warnings);
+  var pap = checkDate('pap_date','Last Pap date',errors,warnings);
+  if(pap && pap.getTime() > Date.now()) errors.push('Last Pap date cannot be in the future.');
+  var deliv = checkDate('ob_delivDate','Delivery date',errors,warnings);
+  if(deliv && deliv.getTime() > visit.getTime()) errors.push('Delivery date cannot be after the date of visit.');
+  LABS.forEach(function(l){ checkDate('lab_'+l[0]+'_date', l[1] + ' date', errors, warnings); });
+
+  checkRange('pt_age','Age',10,70,errors,warnings,14,55);
+  checkRange('ob_gaW','Gestational age (weeks)',0,45,errors,warnings,4,42);
+  checkRange('ob_gaD','Gestational age (days)',0,6,errors,warnings);
+  ['ob_g','ob_t','ob_p','ob_a','ob_l'].forEach(function(id){ checkRange(id, labelOf(id), 0, 30, errors, warnings); });
+  var g = num('ob_g'), t = num('ob_t'), p = num('ob_p'), a = num('ob_a');
+  if(g !== null && t !== null && p !== null && a !== null && (t + p + a) > g) warnings.push('Term + preterm + abortions exceeds gravida — verify GTPAL.');
+  checkRange('fa_fhr','FHR',60,240,errors,warnings,110,160);
+  checkRange('fa_fh','Fundal height',0,60,errors,warnings,10,45);
+  checkRange('fa_fmCount','Fetal movements/day',0,500,errors,warnings);
+  var sys = checkRange('vs_sys','Systolic BP',50,260,errors,warnings,90,139);
+  var dia = checkRange('vs_dia','Diastolic BP',20,160,errors,warnings,50,89);
+  if(sys !== null && dia !== null && dia >= sys) errors.push('Diastolic BP must be lower than systolic BP.');
+  checkRange('vs_hr','Pulse',20,250,errors,warnings,50,120);
+  checkRange('vs_rr','Respiratory rate',4,60,errors,warnings,10,24);
+  checkRange('vs_spo2','SpO2',50,100,errors,warnings,94,100);
+  if(val('vs_wtUnit') === 'kg') checkRange('vs_wt','Weight (kg)',20,350,errors,warnings); else checkRange('vs_wt','Weight (lb)',44,770,errors,warnings);
+  if(val('vs_htUnit') === 'cm') checkRange('vs_htCm','Height (cm)',100,230,errors,warnings);
+  else { checkRange('vs_htFt','Height (ft)',3,7,errors,warnings); checkRange('vs_htIn','Height (in)',0,11.9,errors,warnings); }
+  if(val('vs_tempUnit') === '°C') checkRange('vs_temp','Temperature (°C)',30,43,errors,warnings,36,37.9); else checkRange('vs_temp','Temperature (°F)',86,110,errors,warnings,96.8,100.3);
+  checkRange('mh_menarche','Age at menarche',6,25,errors,warnings);
+  checkRange('mh_menoAge','Age at menopause',30,70,errors,warnings);
+  checkRange('sh_cigs','Cigarettes/day',0,100,errors,warnings);
+  checkRange('sh_partners','Number of partners',0,100,errors,warnings);
+  var b = bmi(); if(b !== null && (b < 12 || b > 70)) warnings.push('Calculated BMI of ' + b + ' is implausible — check weight and height units.');
+  if(dob && num('pt_age') !== null){
+    var calc = visit.getFullYear() - dob.getFullYear(); if(visit.getMonth() < dob.getMonth() || (visit.getMonth() === dob.getMonth() && visit.getDate() < dob.getDate())) calc--;
+    if(Math.abs(calc - num('pt_age')) > 1) warnings.push('Entered age (' + num('pt_age') + ') does not match DOB (calculated ' + calc + ').');
+  }
+  return {errors:errors, warnings:warnings};
+}
+
+/* ---------- clinical warning system ---------- */
+var URGENT = 'Potential urgent finding — evaluate according to clinical protocol.';
+function clinicalWarnings(){
+  var w = [];
+  var sys = num('vs_sys'), dia = num('vs_dia');
+  var severeHA = Y('sym_headache') && SV('sym_headache_sev') === 'Severe';
+  var visionSx = Y('sym_blurred') || Y('sym_vision') || Y('ros_vision') || Y('ros_blurred');
+  if((sys !== null && sys >= 160) || (dia !== null && dia >= 110)) w.push('Severe-range hypertension (BP ' + (sys||'?') + '/' + (dia||'?') + ').');
+  else if(((sys !== null && sys >= 140) || (dia !== null && dia >= 90)) && (Y('sym_headache') || visionSx || Y('sym_abdPain'))) w.push('Elevated blood pressure with headache, visual, or abdominal symptoms.');
+  if(Y('sym_vagBleeding') && (SV('sym_vagBleeding_sev') === 'Severe' || /heavy/i.test(V('sym_other')))) w.push('Heavy vaginal bleeding.');
+  else if(Y('sym_vagBleeding') && isPregnant()) w.push('Vaginal bleeding in pregnancy.');
+  if(Y('sym_leakage') || Y('ros_leakage')) w.push('Leakage of fluid.');
+  if(Y('sym_decFM') || Y('ros_decFM') || (isPregnant() && N('fa_fm'))) w.push('Decreased or absent fetal movement.');
+  if(severeHA) w.push('Severe headache.');
+  if(visionSx) w.push('Vision changes.');
+  if(Y('sym_abdPain') && SV('sym_abdPain_sev') === 'Severe') w.push('Severe abdominal pain.');
+  if(Y('sym_chestPain') || Y('ros_chestPain')) w.push('Chest pain.');
+  if(Y('sym_sob') && SV('sym_sob_sev') === 'Severe') w.push('Severe shortness of breath.');
+  if(Y('sym_syncope') || Y('ros_syncope')) w.push('Syncope.');
+  var tf = tempF();
+  if(Y('sym_fever') || Y('ros_fever') || (tf !== null && tf >= 100.4)) w.push('Fever' + (tf !== null && tf >= 100.4 ? ' (T ' + round1(tf) + '°F)' : '') + '.');
+  var gw = gaWeeks();
+  if(Y('sym_contractions') && V('ctx_reg') === 'Regular' && Y('ctx_painful') && gw !== null && gw >= 37) w.push('Regular painful contractions at term.');
+  if(Y('sym_contractions') && V('ctx_reg') === 'Regular' && gw !== null && gw < 37 && gw >= 20) w.push('Regular contractions before 37 weeks.');
+  var fhr = num('fa_fhr'); if(fhr !== null && (fhr < 110 || fhr > 160)) w.push('FHR ' + fhr + ' bpm outside 110–160.');
+  if(isPregnant() && N('pe_fht') && gw !== null && gw >= 12) w.push('Fetal heart tones not detected on exam.');
+  if(Y('ros_si')) w.push('Suicidal ideation reported.');
+  if(Y('sh_ipv') || N('sh_safe')) w.push('Safety concern at home / IPV concern.');
+  var spo2 = num('vs_spo2'); if(spo2 !== null && spo2 < 94) w.push('SpO2 ' + spo2 + '%.');
+  return w;
+}
+function showLiveWarnings(){
+  var b = $('warnBanner'); var w = clinicalWarnings();
+  if(!w.length){ b.classList.remove('show'); b.innerHTML = ''; return; }
+  b.innerHTML = '';
+  b.appendChild(el('div',null,'⚠ ' + URGENT));
+  b.appendChild(el('ul',null, w.map(function(x){ return el('li',{text:x}); })));
+  b.classList.add('show');
+}
+
+/* ---------- ICD-10-CM suggestions ---------- */
+var icdDirty = false;
+function tri(){ var t = trimester(); return t ? String(t) : '0'; }
+function triName(){ var t = trimester(); return t === 1 ? 'first trimester' : t === 2 ? 'second trimester' : t === 3 ? 'third trimester' : 'unspecified trimester'; }
+function z3a(){
+  var w = gaWeeks(); if(w === null) return null;
+  var code, desc;
+  if(w < 8){ code = 'Z3A.01'; desc = 'Less than 8 weeks gestation of pregnancy'; }
+  else if(w <= 39){ code = 'Z3A.' + (w < 10 ? '0' : '') + w; desc = w + ' weeks gestation of pregnancy'; }
+  else if(w <= 42){ code = 'Z3A.' + w; desc = w + ' weeks gestation of pregnancy'; }
+  else { code = 'Z3A.49'; desc = 'Greater than 42 weeks gestation of pregnancy'; }
+  return {code:code, desc:desc};
+}
+function C(code, desc){ return {code:code, desc:desc}; }
+function fibroidCode(){
+  var loc = V('fib_loc');
+  if(loc === 'Intramural') return C('D25.1','Intramural leiomyoma of uterus');
+  if(loc === 'Subserosal' || loc === 'Pedunculated') return C('D25.2','Subserosal leiomyoma of uterus');
+  if(loc === 'Submucosal') return C('D25.0','Submucous leiomyoma of uterus');
+  return C('D25.9','Leiomyoma of uterus, unspecified');
+}
+
+/* Assessment items: each {text, codes:[{code,desc}]} — built from documented history, visit type and GA only. */
+function buildAssessment(){
+  var items = [];
+  var preg = isPregnant(), t = tri(), tn = triName(), ga = gaStr(), gw = gaWeeks();
+  var complicating = [];   // O-codes present → Z34 not appropriate
+  var g = num('ob_g');
+
+  if(preg){
+    var txt1 = 'Intrauterine pregnancy' + (ga ? ' at ' + ga : '') + '.';
+    var codes1 = []; var z = z3a(); if(z) codes1.push(z);
+    items.push({key:'iup', text:txt1, codes:codes1});
+  }
+  if(preg && Y('gyn_fibroids')){
+    var pain = PAIN_SYMPTOMS.some(function(s){ return Y('sym_'+s); });
+    var pTxt = pain ? ' with intermittent ' + painPhrase() + '.' : '.';
+    items.push({key:'fib', text:'Uterine fibroids complicating pregnancy' + pTxt, codes:[ C('O34.1'+t,'Maternal care for benign tumor of corpus uteri, ' + tn), fibroidCode() ]});
+    complicating.push('fib');
+  } else if(Y('gyn_fibroids')){
+    items.push({key:'fib', text:'Uterine leiomyoma' + (V('fib_sx') ? ', ' + lc(V('fib_sx')) : '') + '.', codes:[ fibroidCode() ]});
+  }
+  var pmhPreg = [
+    ['htn','Chronic (pre-existing) hypertension complicating pregnancy.', C('O10.01'+t,'Pre-existing essential hypertension complicating pregnancy, ' + tn), null],
+    ['dm','Pre-existing diabetes mellitus complicating pregnancy.', C('O24.31'+t,'Unspecified pre-existing diabetes mellitus in pregnancy, ' + tn), null],
+    ['gdm','Gestational diabetes mellitus.', C('O24.419','Gestational diabetes mellitus in pregnancy, unspecified control'), null],
+    ['asthma','Asthma complicating pregnancy.', C('O99.51'+t,'Diseases of the respiratory system complicating pregnancy, ' + tn), C('J45.909','Unspecified asthma, uncomplicated')],
+    ['anemia','Anemia complicating pregnancy.', C('O99.01'+t,'Anemia complicating pregnancy, ' + tn), C('D64.9','Anemia, unspecified')],
+    ['thyroid','Thyroid disease complicating pregnancy.', C('O99.28'+t,'Endocrine, nutritional and metabolic diseases complicating pregnancy, ' + tn), C('E07.9','Disorder of thyroid, unspecified')],
+    ['depression','Depression complicating pregnancy.', C('O99.34'+t,'Other mental disorders complicating pregnancy, ' + tn), C('F32.A','Depression, unspecified')],
+    ['anxiety','Anxiety complicating pregnancy.', C('O99.34'+t,'Other mental disorders complicating pregnancy, ' + tn), C('F41.9','Anxiety disorder, unspecified')],
+    ['seizure','Seizure disorder complicating pregnancy.', C('O99.35'+t,'Diseases of the nervous system complicating pregnancy, ' + tn), C('G40.909','Epilepsy, unspecified, not intractable, without status epilepticus')],
+    ['heart','Heart disease complicating pregnancy.', C('O99.41'+t,'Diseases of the circulatory system complicating pregnancy, ' + tn), null],
+    ['clotting','Coagulation disorder complicating pregnancy.', C('O99.11'+t,'Other diseases of the blood and blood-forming organs complicating pregnancy, ' + tn), C('D68.9','Coagulation defect, unspecified')],
+    ['kidney','Renal disease complicating pregnancy.', C('O26.83'+t,'Pregnancy related renal disease, ' + tn), null]
+  ];
+  var pmhNonPreg = { htn:C('I10','Essential (primary) hypertension'), dm:C('E11.9','Type 2 diabetes mellitus without complications'), gdm:C('Z86.32','Personal history of gestational diabetes'),
+    asthma:C('J45.909','Unspecified asthma, uncomplicated'), anemia:C('D64.9','Anemia, unspecified'), thyroid:C('E07.9','Disorder of thyroid, unspecified'),
+    depression:C('F32.A','Depression, unspecified'), anxiety:C('F41.9','Anxiety disorder, unspecified'), seizure:C('G40.909','Epilepsy, unspecified, not intractable, without status epilepticus'),
+    heart:C('I51.9','Heart disease, unspecified'), clotting:C('D68.9','Coagulation defect, unspecified'), kidney:C('N28.9','Disorder of kidney and ureter, unspecified'),
+    liver:C('K76.9','Liver disease, unspecified'), blood:C('D75.9','Disease of blood and blood-forming organs, unspecified'), autoimmune:C('M35.9','Systemic involvement of connective tissue, unspecified') };
+  if(preg){
+    pmhPreg.forEach(function(r){
+      if(Y('pmh_'+r[0])){ var codes=[r[2]]; if(r[3]) codes.push(r[3]); items.push({key:'pmh_'+r[0], text:r[1], codes:codes}); complicating.push(r[0]); }
+    });
+    if(Y('pmh_liver') || Y('pmh_blood') || Y('pmh_autoimmune') || Y('pmh_psych')){
+      var others = []; if(Y('pmh_liver')) others.push('liver disease'); if(Y('pmh_blood')) others.push('blood disorder'); if(Y('pmh_autoimmune')) others.push('autoimmune disease'); if(Y('pmh_psych')) others.push('psychiatric condition');
+      items.push({key:'pmh_misc', text:cap(joinList(others)) + ' complicating pregnancy.', codes:[ C('O99.89','Other specified diseases and conditions complicating pregnancy, childbirth and the puerperium') ]});
+      complicating.push('misc');
+    }
+  } else {
+    var chronic = [];
+    PMH_ITEMS.forEach(function(it){ if(Y('pmh_'+it[0]) && pmhNonPreg[it[0]]) chronic.push({name:lc(it[1]), code:pmhNonPreg[it[0]]}); });
+    if(chronic.length) items.push({key:'chronic', text:'Chronic conditions: ' + joinList(chronic.map(function(c){ return c.name; })) + '.', codes:chronic.map(function(c){ return c.code; })});
+  }
+  // obstetric history relevant to a current pregnancy
+  if(preg){
+    var a = ageYears();
+    if(a !== null && a >= 35){
+      var primi = (g === 1);
+      items.push({key:'ama', text:'Advanced maternal age' + (primi ? ', primigravida' : ', multigravida') + '.', codes:[ C(primi ? 'O09.51'+t : 'O09.52'+t, 'Supervision of elderly ' + (primi?'primigravida':'multigravida') + ', ' + tn) ]});
+    }
+    if(Y('psh_csection')){ items.push({key:'pcs', text:'History of cesarean delivery.', codes:[ C('O34.21'+(t==='0'?'9':'9'),'Maternal care for unspecified type scar from previous cesarean delivery') ]}); complicating.push('pcs'); }
+    var losses = Y('hx_loss') ? getRows('loss') : [];
+    var stillbirth = losses.some(function(r){ return r.type === 'Stillbirth'; });
+    if(Y('gyn_rpl') || stillbirth){ items.push({key:'poorhx', text:'Supervision of pregnancy with poor obstetric history (' + (stillbirth ? 'prior stillbirth' : 'recurrent pregnancy loss') + ').', codes:[ C('O09.29'+t,'Supervision of pregnancy with other poor reproductive or obstetric history, ' + tn) ]}); complicating.push('poorhx'); }
+    if(Y('gyn_ectopic')){ items.push({key:'ectopichx', text:'History of ectopic pregnancy.', codes:[ C('O09.1'+t,'Supervision of pregnancy with history of ectopic pregnancy, ' + tn) ]}); complicating.push('ectopic'); }
+    if(V('sh_smoke') === 'Current smoker'){ items.push({key:'smoke', text:'Tobacco use during pregnancy.', codes:[ C('O99.33'+t,'Smoking (tobacco) complicating pregnancy, ' + tn), C('F17.210','Nicotine dependence, cigarettes, uncomplicated') ]}); complicating.push('smoke'); }
+    if(Y('sh_alcohol')){ items.push({key:'alc', text:'Alcohol use during pregnancy.', codes:[ C('O99.31'+t,'Alcohol use complicating pregnancy, ' + tn) ]}); complicating.push('alc'); }
+    if(Y('sh_drugs')){ items.push({key:'drug', text:'Substance use during pregnancy (' + lc(SV('sh_drugType') || 'unspecified') + ').', codes:[ C('O99.32'+t,'Drug use complicating pregnancy, ' + tn) ]}); complicating.push('drug'); }
+  }
+  // medication-associated nausea (linked finding, not a bare symptom)
+  if(Y('sym_nausea') && Y('med_oxy')){
+    items.push({key:'nausea', text:'Medication-associated nausea' + (Y('med_ond') ? ', controlled with ondansetron.' : '.'), codes:[ C('R11.0','Nausea') ]});
+  }
+  // postpartum / GYN / contraception encounters
+  if(isPostpartum() && !preg){
+    var pp = 'Postpartum';
+    var dd = parseISO(V('ob_delivDate')), vd = parseISO(V('pt_visitDate')) || new Date();
+    if(dd){ var wk = Math.floor(daysBetween(dd, vd)/7); pp += ', ' + wk + ' week' + (wk===1?'':'s'); }
+    if(V('ob_delivMode')) pp += ' status post ' + lc(V('ob_delivMode')) + ' delivery';
+    items.push({key:'pp', text:pp + '.', codes:[ C('Z39.2','Encounter for routine postpartum follow-up') ]});
+  }
+  if(V('ob_visit') === 'Annual GYN'){
+    items.push({key:'annual', text:'Routine gynecologic examination.', codes:[ C('Z01.419','Encounter for gynecological examination (general) (routine) without abnormal findings') ]});
+  }
+  if(V('ob_visit') === 'Contraception' || Y('cx_want')){
+    items.push({key:'contra', text:(isPregnant() || isPostpartum() ? 'Postpartum contraception counseling.' : 'Contraception counseling and management.'), codes:[ C('Z30.09','Encounter for other general counseling and advice on contraception') ]});
+  }
+  // cervical screening results / history
+  var papMap = { 'ASC-US':C('R87.610','Atypical squamous cells of undetermined significance on cytologic smear of cervix'), 'ASC-H':C('R87.611','Atypical squamous cells cannot exclude HSIL on cytologic smear of cervix'),
+    'LSIL':C('R87.612','Low grade squamous intraepithelial lesion on cytologic smear of cervix'), 'HSIL':C('R87.613','High grade squamous intraepithelial lesion on cytologic smear of cervix'), 'AGC':C('R87.619','Other abnormal cytological findings on specimens from cervix uteri') };
+  if(papMap[V('pap_result')]){
+    var pc = [ papMap[V('pap_result')] ]; if(/Positive/.test(V('pap_hpv'))) pc.push(C('R87.810','Cervical high risk human papillomavirus (HPV) DNA test positive'));
+    items.push({key:'pap', text:'Abnormal cervical cytology (' + V('pap_result') + (/Positive/.test(V('pap_hpv')) ? ', HPV positive' : '') + ').', codes:pc});
+  } else if(Y('pap_abnHx') || Y('gyn_dysplasia')){
+    items.push({key:'paphx', text:'History of abnormal cervical cytology / cervical dysplasia.', codes:[ C('Z87.410','Personal history of cervical dysplasia') ]});
+  }
+  // non-pregnant GYN conditions
+  if(!preg){
+    var gynMap = { endometriosis:C('N80.9','Endometriosis, unspecified'), pcos:C('E28.2','Polycystic ovarian syndrome'), cyst:C('N83.209','Unspecified ovarian cyst, unspecified side'),
+      aub:C('N93.9','Abnormal uterine and vaginal bleeding, unspecified'), infertility:C('N97.9','Female infertility, unspecified'), rpl:C('N96','Recurrent pregnancy loss') };
+    GYN_ITEMS.forEach(function(it){ if(Y('gyn_'+it[0]) && gynMap[it[0]]) items.push({key:'gyn_'+it[0], text:it[1] + '.', codes:[ gynMap[it[0]] ]}); });
+    if(Y('mh_dysmen') && (V('ob_visit') === 'Annual GYN' || V('ob_visit') === 'Other')) items.push({key:'dysmen', text:'Dysmenorrhea.', codes:[ C('N94.6','Dysmenorrhea, unspecified') ]});
+    if(Y('mh_menopause')) items.push({key:'meno', text:'Postmenopausal status.', codes:[ C('Z78.0','Asymptomatic menopausal state') ]});
+  }
+  // Z34 only for an uncomplicated pregnancy
+  if(preg && complicating.length === 0){
+    var primi2 = (g === 1);
+    var zc = (primi2 ? 'Z34.0' : 'Z34.8') + t;
+    var zd = 'Encounter for supervision of ' + (primi2 ? 'normal first pregnancy' : 'other normal pregnancy') + ', ' + tn;
+    items[0].codes.unshift(C(zc, zd));
+  }
+  return items;
+}
+function painPhrase(){
+  var parts = [];
+  if(Y('sym_pelvicPain') && Y('sym_groinPain')) parts.push('pelvic/groin pain');
+  else { if(Y('sym_pelvicPain')) parts.push('pelvic pain'); if(Y('sym_groinPain')) parts.push('groin pain'); }
+  if(Y('sym_abdPain')) parts.push('abdominal pain');
+  if(Y('sym_cramping')) parts.push('cramping');
+  if(Y('sym_backPain')) parts.push('back pain');
+  return joinList(parts) || 'pain';
+}
+
+/* ICD list UI */
+function addIcdRow(code, desc){
+  var row = el('div',{class:'icdrow'},[
+    el('input',{type:'text',class:'icd-code',value:code||'',placeholder:'Code',oninput:function(){ icdDirty = true; }}),
+    el('input',{type:'text',class:'icd-desc',value:desc||'',placeholder:'Description',oninput:function(){ icdDirty = true; }}),
+    el('button',{type:'button',class:'btn-danger btn-small',text:'Remove',onclick:function(){ row.parentNode.removeChild(row); icdDirty = true; }})
+  ]);
+  $('icdList').appendChild(row);
+  if(code === '' && desc === '') icdDirty = true;
+}
+function setIcdList(codes){
+  $('icdList').innerHTML = '';
+  var seen = {};
+  codes.forEach(function(c){ if(!seen[c.code]){ seen[c.code] = true; addIcdRow(c.code, c.desc); } });
+  if(!codes.length) $('icdList').appendChild(el('p',{class:'small',id:'icdEmpty',text:'No codes suggested yet. Click Generate SOAP Note or Refresh suggestions.'}));
+  icdDirty = false;
+}
+function getIcdList(){
+  var out = []; var rows = $('icdList').querySelectorAll('.icdrow');
+  for(var i=0;i<rows.length;i++){
+    var code = rows[i].querySelector('.icd-code').value.trim(), desc = rows[i].querySelector('.icd-desc').value.trim();
+    if(code) out.push({code:code, desc:desc});
+  }
+  return out;
+}
+function suggestedCodes(){
+  var all = []; buildAssessment().forEach(function(it){ all = all.concat(it.codes); }); return all;
+}
+function refreshIcd(){ setIcdList(suggestedCodes()); toast('ICD-10 suggestions refreshed.'); }
+/* ---------- SOAP note generation ---------- */
+function visitPhrase(){
+  var v = V('ob_visit'), cc = V('ob_cc');
+  var map = { 'Initial prenatal':'presents for initial prenatal visit', 'Routine prenatal':'presents for routine prenatal follow-up',
+    'Problem visit':'presents for problem-focused OB visit', 'Postpartum':'presents for postpartum visit', 'Annual GYN':'presents for annual gynecologic examination',
+    'Contraception':'presents for contraception counseling and management', 'Other':'presents for evaluation' };
+  var s = map[v] || 'presents for evaluation';
+  if(cc) s += ' with chief concern of ' + lc(cc).replace(/\.$/,'');
+  return s;
+}
+function gpString(){
+  var g = V('ob_g'); if(!g) return '';
+  var s = 'G' + g;
+  var t = V('ob_t'), p = V('ob_p'), a = V('ob_a'), l = V('ob_l');
+  if(t || p || a || l) s += 'P' + (t||'0') + (p||'0') + (a||'0') + (l||'0');
+  return s;
+}
+function symDescriptor(base){
+  var desc = [];
+  var freq = SV(base+'_freq'), dur = SV(base+'_dur'), onset = SV(base+'_onset'), sev = SV(base+'_sev'), loc = SV(base+'_loc'), ch = SV(base+'_char');
+  if(freq){ if(freq === 'Once') desc.push('as a single episode'); else if(freq === 'Constant') desc.push('which is constant'); else desc.push('approximately ' + lc(freq)); }
+  if(dur && dur !== 'Constant' && dur !== 'Intermittent') desc.push('lasting ' + lc(dur));
+  if(onset){ if(/^since/i.test(onset)) desc.push(lc(onset)); else desc.push('with onset ' + lc(onset)); }
+  if(loc){ desc.push(loc === 'Generalized' ? 'generalized in distribution' : 'located in the ' + lc(loc)); }
+  if(ch) desc.push('described as ' + lc(ch));
+  if(sev) desc.push(lc(sev) + ' in severity');
+  return desc;
+}
+function symFactors(base, subject){
+  var f = [];
+  if(SV(base+'_agg')) f.push('worsened by ' + lc(SV(base+'_agg')));
+  if(SV(base+'_rel')) f.push(SV(base+'_rel') === 'Nothing' ? 'not relieved by anything tried' : 'relieved by ' + lc(SV(base+'_rel')));
+  var assoc = V(base+'_assoc'); if(assoc) f.push('associated with ' + lc(assoc).replace(/\.$/,''));
+  return f.length ? subject + ' ' + joinList(f) + '.' : '';
+}
+function isIntermittent(base){
+  var freq = SV(base+'_freq'), dur = SV(base+'_dur');
+  if(dur === 'Intermittent') return true;
+  return ['Twice weekly','Several times weekly','Weekly','Occasional','Several times daily'].indexOf(freq) >= 0;
+}
+function symptomSentences(){
+  var out = [], handled = {};
+  // merge pelvic + groin pain
+  if(Y('sym_pelvicPain') && Y('sym_groinPain')){
+    handled.pelvicPain = handled.groinPain = true;
+    var base = 'sym_pelvicPain';
+    var s = 'Reports ' + (isIntermittent(base) ? 'intermittent ' : '') + 'pelvic/groin pain';
+    var d = symDescriptor(base); if(d.length) s += ' ' + d.join(', ');
+    if(Y('gyn_fibroids')) s += ' in the setting of known uterine fibroids';
+    out.push(s + '.');
+    var f = symFactors(base, 'Pain is'); if(f) out.push(f);
+  }
+  SYMPTOMS.forEach(function(it){
+    var id = it[0], base = 'sym_' + id;
+    if(handled[id] || !Y(base)) return;
+    if(id === 'contractions' || id === 'decFM' || id === 'incFM') return; // handled with fetal section
+    if(id === 'nausea' && Y('med_oxy') && Y('med_ond') && !symDescriptor(base).length && !symFactors(base,'x')) return; // covered by medication sentence
+    var isPain = PAIN_SYMPTOMS.indexOf(id) >= 0;
+    var phrase = META[base].phrase || lc(it[1]);
+    var s = 'Reports ' + (isIntermittent(base) ? 'intermittent ' : '') + phrase;
+    var d = symDescriptor(base); if(d.length) s += ' ' + d.join(', ');
+    if(isPain && Y('gyn_fibroids') && (id === 'pelvicPain' || id === 'groinPain' || id === 'abdPain' || id === 'cramping')) s += ' in the setting of known uterine fibroids';
+    out.push(s + '.');
+    var f = symFactors(base, isPain ? 'Pain is' : 'Symptoms are'); if(f) out.push(f);
+  });
+  if(V('sym_other')) out.push(sentence('Also reports ' + lc(V('sym_other')).replace(/^also reports /,'')));
+  return out;
+}
+function fetalMovementContractions(){
+  var out = [];
+  if(!isPregnant()) return out;
+  var fm = '';
+  var gwk = gaWeeks(); var fmAge = (gwk === null || gwk >= 16);
+  if(Y('fa_fm') && !Y('sym_decFM') && fmAge) fm = 'good fetal movement' + (num('fa_fmCount') !== null ? ' (approximately ' + num('fa_fmCount') + ' movements/day)' : '');
+  else if(N('fa_fm') || Y('sym_decFM')) fm = 'decreased fetal movement' + (SV('sym_decFM_onset') ? ' with onset ' + lc(SV('sym_decFM_onset')) : '');
+  if(Y('sym_incFM')) fm = (fm ? fm + ' and ' : '') + 'increased fetal movement';
+  var ctx = '';
+  if(Y('sym_contractions')){
+    var reg = V('ctx_reg'), painful = V('ctx_painful'), freq = SV('ctx_freq'), dur = SV('ctx_dur');
+    var adj = [];
+    if(reg === 'Irregular' && painful !== 'Yes' && !freq) ctx = 'occasional contractions';
+    else {
+      ctx = (reg ? lc(reg) + ' ' : '') + 'contractions';
+      if(freq) adj.push(/^every/i.test(freq) ? lc(freq) : lc(freq));
+      if(dur) adj.push('lasting ' + lc(dur));
+      if(painful === 'Yes') adj.push('painful'); else if(painful === 'No') adj.push('nonpainful');
+      if(Y('ctx_intensity')) adj.push('increasing in intensity'); else if(N('ctx_intensity') && vis('ctx_intensity')) adj.push('not increasing in intensity');
+      if(adj.length) ctx += ' ' + adj.join(', ');
+    }
+    if(Y('ctx_bh')) ctx += '; Braxton Hicks contractions suspected';
+  }
+  if(fm && ctx) out.push('Reports ' + fm + ' and ' + ctx + '.');
+  else if(fm) out.push('Reports ' + fm + '.');
+  else if(ctx) out.push('Reports ' + ctx + '.');
+  return out;
+}
+function deniesSentence(){
+  var neg = [];
+  var preg = isPregnant();
+  if(N('sym_vagBleeding')) neg.push('vaginal bleeding');
+  if(preg && N('sym_leakage')) neg.push('leakage of fluid');
+  if(preg && N('sym_contractions')) neg.push('contractions');
+  if(preg && N('sym_decFM') && !N('fa_fm') && (gaWeeks() === null || gaWeeks() >= 16)) neg.push('decreased fetal movement');
+  if(N('sym_headache')) neg.push('headache');
+  if(N('sym_blurred') && N('sym_vision')) neg.push('vision changes');
+  if(N('sym_abdPain') && !preg) neg.push('abdominal pain');
+  if(N('sym_dysuria')) neg.push('dysuria');
+  if(N('sym_fever')) neg.push('fever');
+  if(!neg.length) return '';
+  return 'Denies ' + joinList(neg, 'or') + '.';
+}
+function obHistorySentences(){
+  var out = [];
+  if(Y('hx_loss')){
+    var rows = getRows('loss').filter(function(r){ return r._any; });
+    if(rows.length){
+      var parts = rows.map(function(r){
+        var s = lc(r.type || 'pregnancy loss');
+        var det = []; if(r.year) det.push(r.year); if(r.ga) det.push('at ' + r.ga); if(r.comp) det.push('complicated by ' + lc(r.comp));
+        return s + (det.length ? ' (' + det.join(', ') + ')' : '');
+      });
+      out.push('Obstetric history notable for ' + rows.length + ' prior pregnancy loss' + (rows.length>1?'es':'') + ': ' + joinList(parts) + '.');
+    } else out.push('Reports a history of prior pregnancy loss.');
+  }
+  if(Y('hx_children')){
+    var kids = getRows('child').filter(function(r){ return r._any; });
+    if(kids.length){
+      var kp = kids.map(function(r){
+        var det = []; if(r.year) det.push(r.year); if(r.ga) det.push(r.ga); if(r.deliv) det.push(lc(r.deliv) + ' delivery'); if(r.wt) det.push(r.wt);
+        var comps = []; if(r.pregComp) comps.push('pregnancy: ' + lc(r.pregComp)); if(r.delComp) comps.push('delivery: ' + lc(r.delComp)); if(r.neoComp) comps.push('neonatal: ' + lc(r.neoComp));
+        det.push(comps.length ? 'complications — ' + comps.join('; ') : 'uncomplicated');
+        return det.join(', ');
+      });
+      out.push(kids.length + ' living child' + (kids.length>1?'ren':'') + ': ' + kp.join('; ') + '.');
+    }
+  }
+  if(V('hx_notes')) out.push(sentence(V('hx_notes')));
+  return out;
+}
+function pmhSentences(){
+  var out = [];
+  var pos = []; PMH_ITEMS.forEach(function(it){ if(Y('pmh_'+it[0])) pos.push(lc(it[1]).replace('sti history','STI history')); });
+  if(Y('pmh_other') && V('pmh_otherText')) pos.push(lc(V('pmh_otherText')));
+  if(pos.length) out.push('PMH significant for ' + joinList(pos) + '.'); else if(!V('pmh_notes')) out.push('No significant past medical history.');
+  if(V('pmh_notes')) out.push(sentence(V('pmh_notes')));
+  var surg = [];
+  PSH_ITEMS.forEach(function(it){
+    var base = 'psh_'+it[0]; if(!Y(base)) return;
+    var name = V(base+'_proc') || it[1].replace('Previous ','').replace('Other ','');
+    var det = []; if(V(base+'_year')) det.push(V(base+'_year')); if(V(base+'_comp')) det.push('complicated by ' + lc(V(base+'_comp')));
+    surg.push(lc(name).replace('c-section','cesarean section').replace('d&c','D&C').replace('d&e','D&E').replace('leep','LEEP') + (det.length ? ' (' + det.join(', ') + ')' : ''));
+  });
+  if(surg.length) out.push('Surgical history: ' + joinList(surg) + '.'); else if(!V('psh_notes')) out.push('No prior surgeries.');
+  if(V('psh_notes')) out.push(sentence(V('psh_notes')));
+  var gyn = [];
+  GYN_ITEMS.forEach(function(it){
+    if(!Y('gyn_'+it[0])) return;
+    var name = lc(it[1]).replace('pcos','PCOS');
+    if(it[0] === 'fibroids'){
+      var det = []; if(V('fib_num')) det.push(V('fib_num') === 'Multiple' ? 'multiple' : V('fib_num') + (V('fib_num')==='1'?' fibroid':' fibroids'));
+      if(SV('fib_size')) det.push(SV('fib_size')); if(SV('fib_loc')) det.push(lc(SV('fib_loc')));
+      if(V('fib_sx')) det.push('symptoms: ' + lc(V('fib_sx'))); if(SV('fib_tx') && SV('fib_tx') !== 'None') det.push('treatment: ' + lc(SV('fib_tx')));
+      if(Y('fib_imaging')) det.push('prior imaging' + (V('fib_imagingDetail') ? ': ' + V('fib_imagingDetail') : '')); if(Y('fib_myomectomy')) det.push('prior myomectomy');
+      name += det.length ? ' (' + det.join('; ') + ')' : '';
+    }
+    gyn.push(name);
+  });
+  if(Y('gyn_other') && V('gyn_otherText')) gyn.push(lc(V('gyn_otherText')));
+  if(gyn.length) out.push('GYN history notable for ' + joinList(gyn) + '.');
+  if(V('gyn_notes')) out.push(sentence(V('gyn_notes')));
+  return out;
+}
+function medDetail(base){
+  var d = []; if(V(base+'_dose')) d.push(V(base+'_dose')); if(SV(base+'_route')) d.push(SV(base+'_route')); if(SV(base+'_freq')) d.push(SV(base+'_freq'));
+  var s = d.join(' '); if(V(base+'_ind')) s += (s ? ' ' : '') + 'for ' + lc(V(base+'_ind'));
+  return s ? ' (' + s + ')' : '';
+}
+function medSentences(){
+  var out = [], routine = [];
+  [['pnv','prenatal vitamin'],['iron','iron'],['folic','folic acid'],['asa','aspirin'],['apap','acetaminophen'],['ibu','ibuprofen']].forEach(function(m){ if(Y('med_'+m[0])) routine.push(m[1] + medDetail('med_'+m[0])); });
+  if(routine.length) out.push('Taking ' + joinList(routine) + '.');
+  if(Y('med_oxy') && Y('med_ond')) out.push('Uses oxycodone' + (V('med_oxy_ind') ? ' for ' + lc(V('med_oxy_ind')) : ' for pain') + (medDetail('med_oxy') ? ' ' + medDetail('med_oxy').replace(/ for [^)]+\)/,')') : '') + ' with nausea relieved by ondansetron' + medDetail('med_ond') + '.');
+  else if(Y('med_oxy')) out.push('Uses oxycodone' + (V('med_oxy_ind') ? ' for ' + lc(V('med_oxy_ind')) : ' for pain') + '.');
+  else if(Y('med_ond')) out.push('Takes ondansetron' + (V('med_ond_ind') ? ' for ' + lc(V('med_ond_ind')) : ' for nausea') + '.');
+  var more = [];
+  if(Y('med_otherQuick') && V('med_otherQuick_name')) more.push(V('med_otherQuick_name') + medDetail('med_otherQuick'));
+  getRows('rx').forEach(function(r){ if(!r.name) return; var d = []; if(r.dose) d.push(r.dose); if(r.route) d.push(r.route); if(r.freq) d.push(r.freq); var s = d.join(' '); if(r.ind) s += (s?' ':'') + 'for ' + lc(r.ind); more.push(r.name + (s ? ' (' + s + ')' : '')); });
+  if(more.length) out.push('Additional medications: ' + joinList(more) + '.');
+  if(!out.length) out.push('No current medications reported.');
+  return out;
+}
+function allergySentences(){
+  var list = [];
+  ALLERGY_ITEMS.forEach(function(it){
+    var base = 'al_'+it[0]; if(!Y(base)) return;
+    var s = V(base+'_allergen') || lc(it[1]).replace(' allergy','');
+    if(SV(base+'_reaction')) s += ' (' + lc(SV(base+'_reaction')) + ')';
+    list.push(s);
+  });
+  var out = [];
+  if(Y('al_nkda')) out.push('No known drug allergies' + (list.length ? '; other allergies: ' + joinList(list) + '.' : '.'));
+  else if(list.length) out.push('Allergies: ' + joinList(list) + '.');
+  else if(!V('al_notes')) out.push('No known allergies reported.');
+  if(V('al_notes')) out.push(sentence(V('al_notes')));
+  return out;
+}
+function socialSentences(){
+  var out = [];
+  var sm = V('sh_smoke');
+  if(sm === 'Never smoker') out.push('Never smoker.');
+  else if(sm === 'Former smoker'){ var d=[]; if(num('sh_yearsFormer')!==null) d.push(num('sh_yearsFormer') + ' years'); if(V('sh_quitYear')) d.push('quit ' + V('sh_quitYear')); out.push('Former smoker' + (d.length?' (' + d.join(', ') + ')':'') + '.'); }
+  else if(sm === 'Current smoker'){ var c=[]; if(num('sh_cigs')!==null) c.push(num('sh_cigs') + ' cigarettes/day'); if(num('sh_years')!==null) c.push('for ' + num('sh_years') + ' years'); out.push('Current smoker' + (c.length?', ' + c.join(' '):'') + '.'); }
+  var uses = [], denies = [];
+  if(Y('sh_alcohol')) uses.push('alcohol' + (V('sh_alcFreq')||V('sh_alcAmt') ? ' (' + [V('sh_alcAmt'), lc(V('sh_alcFreq'))].filter(Boolean).join(', ') + ')' : '')); else denies.push('alcohol');
+  if(Y('sh_drugs')) uses.push(lc(SV('sh_drugType') || 'recreational drug') + ' use' + (V('sh_drugFreq') ? ' (' + lc(V('sh_drugFreq')) + ')' : '')); else denies.push('recreational drug');
+  if(Y('sh_caffeine')) uses.push('caffeine' + (SV('sh_caffAmt') ? ' (' + lc(SV('sh_caffAmt')) + ')' : '')); else denies.push('caffeine');
+  if(uses.length) out.push('Reports ' + joinList(uses) + '.');
+  if(denies.length) out.push('Denies ' + joinList(denies) + ' use.');
+  var life = [];
+  if(V('sh_occupation')) life.push('works as ' + lc(V('sh_occupation')));
+  if(Y('sh_exercise')) life.push('exercises regularly' + (V('sh_exerciseDetail') ? ' (' + lc(V('sh_exerciseDetail')) + ')' : ''));
+  if(V('sh_diet')) life.push('diet: ' + lc(V('sh_diet')));
+  if(life.length) out.push(sentence(joinList(life)));
+  var sex = [];
+  if(Y('sh_sexActive')){ sex.push('sexually active' + (num('sh_partners') !== null ? ' with ' + num('sh_partners') + ' partner' + (num('sh_partners')===1?'':'s') + ' in the past year' : '')); if(Y('sh_newPartner')) sex.push('new partner'); }
+  if(Y('sh_stiConcern')) sex.push('expresses STI concern'); if(Y('sh_stiTest')) sex.push('requests STI testing');
+  if(sex.length) out.push(sentence(joinList(sex)));
+  if(Y('sh_ipv') || N('sh_safe')) out.push('Reports ' + (Y('sh_ipv') ? 'intimate partner violence concern' : 'not feeling safe at home') + '.');
+  else if(Y('sh_safe')) out.push('Feels safe at home; denies IPV concerns.');
+  return out;
+}
+function familySentences(){
+  var pos = [];
+  FH_ITEMS.forEach(function(it){
+    var base = 'fh_'+it[0]; if(!Y(base)) return;
+    var name = V(base+'_cond') ? lc(V(base+'_cond')) : lc(it[1]);
+    var det = []; if(SV(base+'_rel')) det.push(lc(SV(base+'_rel'))); if(num(base+'_age') !== null) det.push('diagnosed age ' + num(base+'_age')); if(V(base+'_det')) det.push(lc(V(base+'_det')));
+    pos.push(name + (det.length ? ' (' + det.join(', ') + ')' : ''));
+  });
+  return pos.length ? ['Family history: ' + joinList(pos) + '.'] : ['Family history noncontributory.'];
+}
+function menstrualPapSentences(force){
+  var out = [];
+  var m = [];
+  if(num('mh_menarche') !== null) m.push('menarche at age ' + num('mh_menarche'));
+  var lmp = V('mh_lmp') || V('ob_lmp'); if(lmp && !isPregnant()) m.push('LMP ' + fmtDate(lmp));
+  if(V('mh_cycleLen') || V('mh_cycleDur')) m.push('cycles ' + (V('mh_cycleLen') ? 'every ' + lc(V('mh_cycleLen')) : '') + (V('mh_cycleDur') ? ' lasting ' + lc(V('mh_cycleDur')) : ''));
+  var any = m.length > 0 || Y('mh_heavy') || Y('mh_dysmen') || Y('mh_menopause');
+  if(any || force){
+    if(Y('mh_menopause')) m.push('postmenopausal' + (num('mh_menoAge') !== null ? ' since age ' + num('mh_menoAge') : ''));
+    else { m.push(Y('mh_regular') ? 'regular cycles' : 'irregular cycles'); }
+    var mn = []; if(Y('mh_heavy')) mn.push('heavy menstrual bleeding'); if(Y('mh_dysmen')) mn.push('dysmenorrhea');
+    var s = 'Menstrual history: ' + joinList(m) + '.';
+    if(mn.length) s += ' Reports ' + joinList(mn) + '.'; else s += ' Denies heavy bleeding or dysmenorrhea.';
+    out.push(s);
+  }
+  var p = [];
+  if(V('pap_date') || V('pap_result') || V('pap_hpv')){
+    var s2 = 'Last Pap ' + (V('pap_date') ? fmtDate(V('pap_date')) : 'date unknown');
+    if(V('pap_result')) s2 += ', ' + V('pap_result'); if(V('pap_hpv')) s2 += ', HPV ' + lc(V('pap_hpv'));
+    p.push(s2 + '.');
+  }
+  if(Y('pap_vacc')) p.push('HPV vaccinated' + (V('pap_doses') ? ' (' + V('pap_doses') + ' dose' + (V('pap_doses')==='1'?'':'s') + ')' : '') + '.');
+  var hx = []; if(Y('pap_abnHx')) hx.push('abnormal Pap'); if(Y('pap_colpo')) hx.push('colposcopy'); if(Y('pap_biopsy')) hx.push('cervical biopsy'); if(Y('pap_leep')) hx.push('LEEP');
+  if(hx.length) p.push('History of ' + joinList(hx) + '.'); else if(p.length || force) p.push('No history of abnormal Pap.');
+  return out.concat(p);
+}
+function rosSentence(){
+  var pos = [];
+  ROS_SYSTEMS.forEach(function(sys){
+    var items = sys[1].filter(function(it){ return Y('ros_'+it[0]); }).map(function(it){ return lc(it[1]); });
+    if(items.length) pos.push(sys[0] + ': ' + items.join(', '));
+  });
+  var s;
+  if(pos.length) s = 'ROS positive for ' + pos.join('; ') + '; otherwise negative.';
+  else s = 'ROS negative except as noted above.';
+  if(V('ros_other')) s += ' ' + sentence(V('ros_other'));
+  return s;
+}
+function breastSentence(){
+  var pos = [], neg = [];
+  BREAST_ITEMS.forEach(function(it){ if(it[0]==='bfing'||it[0]==='plans') return; if(Y('br_'+it[0])) pos.push(lc(it[1])); });
+  var out = [];
+  if(pos.length) out.push('Breast history: ' + joinList(pos) + '.');
+  if(Y('br_bfing')) out.push('Currently breastfeeding.');
+  return out;
+}
+function planPrefSentence(){
+  var parts = [];
+  var bf = V('dp_bf') === 'Yes' || Y('br_plans'), ff = V('dp_formula') === 'Yes';
+  if(bf && ff) parts.push('plans combination breast and formula feeding'); else if(bf) parts.push('plans to breastfeed'); else if(ff) parts.push('plans to formula feed'); else if(V('dp_bf') === 'No' && V('dp_formula') === 'No') parts.push('undecided about infant feeding');
+  if(Y('dp_lact')) parts.push('requests lactation counseling');
+  if(V('dp_mode')) parts.push(V('dp_mode') === 'No preference' ? 'has no delivery-mode preference' : 'desires ' + lc(V('dp_mode')) + ' delivery');
+  if(V('dp_pain')) parts.push({None:'prefers no labor analgesia',Epidural:'prefers epidural analgesia','IV medication':'prefers IV pain medication',Unsure:'is undecided regarding labor analgesia'}[V('dp_pain')]);
+  if(Y('cx_want')){
+    var methods = CONTRA_METHODS.filter(function(m){ return Y('cx_'+m[0]); }).map(function(m){ return m[1] === 'Undecided' ? 'undecided' : m[1]; });
+    parts.push('requests postpartum contraception counseling' + (methods.length ? ' and is considering ' + joinList(methods) : ''));
+  }
+  var out = [];
+  if(parts.length) out.push(sentence(joinList(parts)));
+  if(V('dp_plan')) out.push('Birth plan: ' + sentence(V('dp_plan')));
+  return out;
+}
+
+function buildSubjective(){
+  var s = [];
+  var age = ageYears(), gp = gpString(), ga = gaStr(), preg = isPregnant();
+  var opener = (age !== null ? age + '-year-old ' : '') + (gp ? gp + ' ' : '') + (!age && !gp ? 'Patient ' : '') + (preg && ga ? 'at ' + ga + ' ' : '') + visitPhrase() + '.';
+  s.push(cap(opener));
+  if(preg){
+    var pl = V('ob_planned'), de = V('ob_desired');
+    if(pl === 'Yes' && de === 'Yes') s.push('Pregnancy was planned and desired.');
+    else if(pl === 'No' && de === 'Yes') s.push('Pregnancy was unplanned but desired.');
+    else if(pl === 'No' && de === 'No') s.push('Pregnancy was unplanned and is not desired.');
+    else if(pl === 'Yes' && de === 'No') s.push('Pregnancy was planned; patient reports it is not currently desired.');
+    else if(pl === 'Yes') s.push('Pregnancy was planned.'); else if(pl === 'No') s.push('Pregnancy was unplanned.');
+    else if(de === 'Yes') s.push('Pregnancy is desired.'); else if(de === 'No') s.push('Pregnancy is not desired.');
+  }
+  if(isPostpartum() && !preg){
+    var dd = parseISO(V('ob_delivDate')), vd = parseISO(V('pt_visitDate')) || new Date();
+    var pp = []; if(dd){ var wk = Math.floor(daysBetween(dd, vd)/7); pp.push(wk + ' week' + (wk===1?'':'s') + ' postpartum'); }
+    if(V('ob_delivMode')) pp.push('status post ' + lc(V('ob_delivMode')) + ' delivery' + (dd ? ' on ' + fmtDate(V('ob_delivDate')) : ''));
+    if(V('ob_delivComp')) pp.push('complicated by ' + lc(V('ob_delivComp')));
+    if(pp.length) s.push(sentence(joinList(pp)));
+  }
+  s = s.concat(fetalMovementContractions());
+  s = s.concat(symptomSentences());
+  var den = deniesSentence(); if(den) s.push(den);
+  s = s.concat(obHistorySentences());
+  s = s.concat(pmhSentences());
+  s = s.concat(medSentences());
+  s = s.concat(allergySentences());
+  s = s.concat(socialSentences());
+  s = s.concat(familySentences());
+  var gynVisit = ['Annual GYN','Contraception','Initial prenatal','Other'].indexOf(V('ob_visit')) >= 0;
+  s = s.concat(menstrualPapSentences(gynVisit && !preg));
+  s.push(rosSentence());
+  s = s.concat(breastSentence());
+  s = s.concat(planPrefSentence());
+  return s.join(' ');
+}
+
+function buildObjective(){
+  var o = [], v = [];
+  if(num('vs_sys') !== null && num('vs_dia') !== null) v.push('BP ' + num('vs_sys') + '/' + num('vs_dia'));
+  if(num('vs_hr') !== null) v.push('HR ' + num('vs_hr'));
+  if(num('vs_rr') !== null) v.push('RR ' + num('vs_rr'));
+  if(num('vs_temp') !== null) v.push('T ' + num('vs_temp') + val('vs_tempUnit'));
+  if(num('vs_spo2') !== null) v.push('SpO2 ' + num('vs_spo2') + '%');
+  if(num('vs_wt') !== null) v.push('weight ' + num('vs_wt') + ' ' + val('vs_wtUnit'));
+  var hc = heightCm();
+  if(hc !== null){ if(val('vs_htUnit') === 'cm') v.push('height ' + num('vs_htCm') + ' cm'); else v.push('height ' + (num('vs_htFt')||0) + '\'' + (num('vs_htIn')||0) + '"'); }
+  var b = bmi(); if(b !== null) v.push('BMI ' + b);
+  if(v.length) o.push(cap(v.join(', ')) + '.');
+  if(V('pe_general')) o.push('General: ' + lc(SV('pe_general')) + '.');
+  if(isPregnant()){
+    if(num('fa_fh') !== null) o.push('Fundal height ' + num('fa_fh') + ' cm' + (Y('pe_fhAppropriate') ? ', appropriate for gestational age.' : ', not consistent with gestational age (size–date discrepancy).'));
+    if(num('fa_fhr') !== null) o.push('FHR ' + num('fa_fhr') + ' bpm.'); else if(N('pe_fht')) o.push('Fetal heart tones not detected.');
+    if(V('fa_pres') || SV('fa_pos')) o.push('Fetal presentation ' + (V('fa_pres') ? lc(V('fa_pres')) : 'not assessed') + (SV('fa_pos') && SV('fa_pos') !== 'Unknown' ? ' (' + SV('fa_pos') + ')' : '') + '.');
+    if(Y('fa_nst')) o.push('NST ' + (V('fa_nstResult') ? lc(V('fa_nstResult')) : 'performed') + '.');
+    if(Y('pe_fmPresent') && (gaWeeks() === null || gaWeeks() >= 18)) o.push('Fetal movement noted on exam.');
+  }
+  var abd = [];
+  if(Y('pe_abdTender')) abd.push('abdominal tenderness'); if(Y('pe_utTender')) abd.push('uterine tenderness'); if(Y('pe_pelvTender')) abd.push('pelvic tenderness'); if(Y('pe_cva')) abd.push('CVA tenderness');
+  if(abd.length) o.push('Abdomen: ' + joinList(abd) + ' present.'); else o.push('Abdomen: soft, nontender; no uterine or CVA tenderness.');
+  if(Y('pe_edema')) o.push('Edema: ' + [V('pe_edemaGrade'), lc(SV('pe_edemaLoc'))].filter(Boolean).join(' ') + '.'); else o.push('No edema.');
+  if(Y('pe_pelvicDone')){
+    var nl = [], ab = [];
+    if(Y('pe_vulvaNl')) nl.push('external genitalia'); else ab.push('abnormal vulva');
+    if(Y('pe_vagNl')) nl.push('vaginal mucosa'); else ab.push('abnormal vaginal mucosa');
+    if(Y('pe_cxNl')) nl.push('cervix'); else ab.push('abnormal cervical appearance');
+    if(Y('pe_cxBleed')) ab.push('cervical bleeding'); if(Y('pe_vagBleed')) ab.push('vaginal bleeding');
+    if(Y('pe_vagDisch')) ab.push((SV('pe_dischChar') ? lc(SV('pe_dischChar')) + ' ' : '') + 'vaginal discharge');
+    var s = 'Pelvic exam: ' + (nl.length ? 'normal ' + joinList(nl) : '');
+    if(ab.length) s += (nl.length ? '; ' : '') + joinList(ab); else s += '; no bleeding or discharge';
+    o.push(s + '.');
+  }
+  if(Y('pe_cxDone')){
+    var cx = []; if(V('pe_dil')) cx.push(V('pe_dil') === 'Closed' ? 'closed' : V('pe_dil') + ' dilated'); if(V('pe_eff')) cx.push(V('pe_eff') + ' effaced'); if(V('pe_station') && V('pe_station') !== 'Unknown') cx.push('station ' + V('pe_station')); if(V('pe_cxPres')) cx.push(lc(V('pe_cxPres')));
+    if(cx.length) o.push('Cervix: ' + cx.join(', ') + '.');
+  }
+  if(V('pe_notes')) o.push(sentence(V('pe_notes')));
+  var labs = [];
+  LABS.forEach(function(l){
+    var base = 'lab_'+l[0]; if(!Y(base)) return;
+    var name = l[0] === 'otherLab' ? (V(base+'_name') || 'Other test') : l[1];
+    var r = SV(base+'_result'); var d = []; if(r) d.push(lc(r)); if(V(base+'_detail')) d.push(V(base+'_detail')); if(V(base+'_date')) d.push(fmtDate(V(base+'_date')));
+    labs.push(name + (d.length ? ' — ' + d.join(', ') : ' — ordered'));
+  });
+  if(labs.length) o.push('Labs/testing: ' + labs.join('; ') + '.');
+  var stable = !abd.length && !Y('pe_edema') && (!V('pe_general') || V('pe_general') === 'Well-appearing, no acute distress') && !clinicalWarnings().length;
+  if(stable) o.push('Patient clinically stable.');
+  return o.join(' ');
+}
+
+function buildPlan(){
+  var p = [];
+  var cont = []; if(Y('pl_pnv')) cont.push('prenatal vitamin'); if(Y('pl_iron')) cont.push('iron'); if(Y('pl_folic')) cont.push('folic acid');
+  if(cont.length) p.push('Continue ' + joinList(cont) + '.');
+  if(Y('pl_meds')) p.push('Continue current medications.');
+  if(Y('pl_medCouns')) p.push('Medication counseling provided.');
+  if(PAIN_SYMPTOMS.some(function(s){ return Y('sym_'+s); })) p.push('Continue monitoring ' + painPhrase() + '; return precautions reviewed.');
+  var couns = []; if(Y('pl_nutrition') || Y('cn_nutrition')) couns.push('nutrition'); if(Y('pl_exercise') || Y('cn_exercise')) couns.push('exercise'); if(Y('pl_weight') || Y('cn_weight')) couns.push('expected weight gain');
+  if(Y('cn_pnv')) couns.push('prenatal vitamin use'); if(Y('cn_iron')) couns.push('iron supplementation');
+  if(couns.length) p.push('Counseled on ' + joinList(couns) + '.');
+  var vacc = []; if(Y('cn_flu')) vacc.push('influenza'); if(Y('cn_tdap')) vacc.push('Tdap'); if(Y('cn_rsv')) vacc.push('RSV'); if(Y('cn_covid')) vacc.push('COVID-19');
+  if(Y('pl_vacc') || Y('cn_vacc') || vacc.length) p.push('Vaccination counseling provided' + (vacc.length ? ' (' + joinList(vacc) + ')' : '') + '.');
+  if(Y('pl_kick') || Y('cn_kick') || Y('fa_kick')) p.push('Kick-count education provided.');
+  var prec = []; if(Y('pl_labor') || Y('cn_labor')) prec.push('labor'); if(Y('pl_preE') || Y('cn_preE')) prec.push('preeclampsia'); if(Y('pl_fm') || Y('cn_fm')) prec.push('fetal movement'); if(Y('pl_emerg')) prec.push('emergency');
+  if(prec.length) p.push('Reviewed ' + joinList(prec) + ' ' + (prec.length>1?'precautions':'precautions') + ' and warning signs.');
+  var disc = []; if(Y('pl_bf')) disc.push('breastfeeding'); if(Y('pl_contra') || (Y('cx_want') && Y('cx_provided'))) disc.push('postpartum contraception options');
+  if(disc.length) p.push('Discussed ' + joinList(disc) + '.'); else if(Y('cx_want')) p.push('Postpartum contraception counseling to be completed at follow-up.');
+  if(Y('pl_lactRef')) p.push('Lactation referral placed.');
+  if(Y('pl_sti')) p.push('STI prevention counseling provided' + (Y('sh_stiTest') ? '; STI testing ordered per patient request.' : '.'));
+  var orders = [];
+  var labsOrdered = LABS.filter(function(l){ return Y('lab_'+l[0]) && (SV('lab_'+l[0]+'_result') === 'Pending' || !SV('lab_'+l[0]+'_result')); }).map(function(l){ return l[0]==='otherLab' ? (V('lab_otherLab_name')||'other testing') : l[1]; });
+  if(Y('pl_labs')) orders.push('labs' + (labsOrdered.length ? ' (' + labsOrdered.join(', ') + ')' : '')); else if(labsOrdered.length) orders.push(labsOrdered.join(', '));
+  if(Y('pl_us')) orders.push('ultrasound'); if(Y('pl_nst')) orders.push('NST'); if(Y('pl_gbs')) orders.push('GBS culture');
+  if(orders.length) p.push(cap(joinList(orders)) + ' ordered.');
+  if(Y('pl_referral')) p.push('Referral to ' + (V('pl_referralTo') || 'specialty care') + '.');
+  if(Y('pl_other') && V('pl_otherText')) p.push(sentence(V('pl_otherText')));
+  if(clinicalWarnings().length) p.push('Flagged findings above to be evaluated according to clinical protocol.');
+  if(Y('pl_fu')){ var fu = SV('pl_fuWhen'); p.push(fu ? (fu === 'As needed' ? 'Follow up as needed.' : fu === 'Postpartum visit' ? 'Follow up at postpartum visit.' : 'Follow up in ' + lc(fu) + '.') : (isPregnant() ? 'Continue routine prenatal follow-up.' : 'Follow-up scheduled.')); }
+  else if(isPregnant()) p.push('Continue routine prenatal follow-up.');
+  if(V('pl_notes')) p.push(sentence(V('pl_notes')));
+  return p.join(' ');
+}
+
+function buildAssessmentText(items){
+  var list = getIcdList(); var present = {}; list.forEach(function(c){ present[c.code] = true; });
+  var used = {};
+  var lines = items.map(function(it, i){
+    var codes = it.codes.filter(function(c){ if(present[c.code]){ used[c.code] = true; return true; } return false; }).map(function(c){ return c.code; });
+    return (i+1) + '. ' + it.text + (codes.length ? ' (ICD-10: ' + codes.join(', ') + ')' : '');
+  });
+  var extra = list.filter(function(c){ return !used[c.code]; });
+  if(extra.length) lines.push((lines.length+1) + '. Additional codes: ' + extra.map(function(c){ return c.code + (c.desc ? ' — ' + c.desc : ''); }).join('; ') + '.');
+  if(!lines.length) lines.push('1. Encounter as documented above.');
+  return lines.join('\n');
+}
+
+function generate(){
+  var errBox = $('errors'), warnBox = $('noteWarn');
+  errBox.innerHTML = ''; errBox.classList.remove('show'); warnBox.innerHTML = ''; warnBox.classList.remove('show');
+  updateConditionals(); computeDerived();
+  var v = validate();
+  if(v.errors.length){
+    errBox.appendChild(el('div',null,'Please correct the following before generating:'));
+    errBox.appendChild(el('ul',null,v.errors.map(function(e){ return el('li',{text:e}); })));
+    errBox.classList.add('show');
+    $('outputCard').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  var items = buildAssessment();
+  if(!icdDirty) setIcdList(suggestedCodes());
+  var cw = clinicalWarnings();
+  var allWarn = cw.map(function(x){ return URGENT + ' ' + x; }).concat(v.warnings);
+  if(allWarn.length){
+    warnBox.appendChild(el('div',null,'Warnings (note still generated):'));
+    warnBox.appendChild(el('ul',null,allWarn.map(function(e){ return el('li',{text:e}); })));
+    warnBox.classList.add('show');
+  }
+  var header = [];
+  if(V('pt_name')) header.push('Patient: ' + V('pt_name'));
+  if(V('pt_mrn')) header.push('MRN: ' + V('pt_mrn'));
+  if(V('pt_dob')) header.push('DOB: ' + fmtDate(V('pt_dob')));
+  if(V('pt_visitDate')) header.push('Date of visit: ' + fmtDate(V('pt_visitDate')));
+  if(V('pt_provider')) header.push('Provider: ' + V('pt_provider'));
+  if(V('pt_site')) header.push('Site: ' + V('pt_site'));
+  var note = '';
+  if(header.length) note += header.join(' | ') + '\n\n';
+  note += 'S — SUBJECTIVE\n' + buildSubjective() + '\n\n';
+  note += 'O — OBJECTIVE\n' + buildObjective() + '\n\n';
+  note += 'A — ASSESSMENT\n' + buildAssessmentText(items) + '\n\n';
+  note += 'P — PLAN\n' + buildPlan();
+  note = cleanText(note);
+  if(/\b(undefined|null|NaN)\b/.test(note)){ note = note.replace(/\b(undefined|null|NaN)\b/g, '').replace(/ {2,}/g,' '); }
+  $('output').textContent = note; $('output').classList.remove('empty');
+  $('outputCard').scrollIntoView({behavior:'smooth'});
+  toast('SOAP note generated.');
+}
+/* ---------- markdown export ---------- */
+function mdEscape(s){ return String(s||'').replace(/\|/g,'\\|').replace(/\n/g,' '); }
+function fileStamp(){
+  var d = new Date();
+  function p(n){ return (n<10?'0':'') + n; }
+  var name = (V('pt_name') || 'anon').replace(/[^A-Za-z0-9]+/g,'').slice(0,12) || 'anon';
+  return 'soap_' + d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()) + '_' + name;
+}
+function fieldValueForMd(f, id){
+  var m = META[id]; if(!m) return '';
+  var v = val(id); if(!vis(id)) return '';
+  if(v === '' || v === (m.def === undefined ? '' : m.def)) return '';
+  if(v === OTHER) return val(id+'_other') ? 'Other: ' + val(id+'_other') : 'Other';
+  if(f.t === 'date') return fmtDate(v) || v;
+  return v;
+}
+function collectRowsMd(fields, prefix, rows){
+  fields.forEach(function(f){
+    if(f.t === 'grp'){ if(evalWhen(prefix + f.when)) collectRowsMd(f.fields, prefix, rows); return; }
+    if(f.t === 'rep'){
+      var items = getRows(f.id).filter(function(r){ return r._any; });
+      if(items.length){
+        rows.push({sub:f.title, items:items.map(function(r){ return f.fields.filter(function(ff){ return ff.id && r[ff.id]; }).map(function(ff){ return ff.label + ': ' + r[ff.id]; }).join('; '); })});
+      }
+      return;
+    }
+    if(f.t === 'custom'){
+      var ids = {ob_gtpal:['ob_gtpal'], vs_wtWrap:['vs_wt','vs_wtUnit'], vs_htWrap:['vs_htFt','vs_htIn','vs_htCm'], vs_bmiWrap:['vs_bmi'], vs_bpWrap:['vs_sys','vs_dia'], vs_tempWrap:['vs_temp','vs_tempUnit']}[f.id] || [];
+      if(f.id === 'vs_wtWrap' && val('vs_wt')) rows.push({k:'Weight', v:val('vs_wt') + ' ' + val('vs_wtUnit')});
+      else if(f.id === 'vs_htWrap' && heightCm() !== null) rows.push({k:'Height', v: val('vs_htUnit') === 'cm' ? val('vs_htCm') + ' cm' : (val('vs_htFt')||0) + ' ft ' + (val('vs_htIn')||0) + ' in'});
+      else if(f.id === 'vs_bpWrap' && (val('vs_sys') || val('vs_dia'))) rows.push({k:'Blood pressure', v:val('vs_sys') + '/' + val('vs_dia')});
+      else if(f.id === 'vs_tempWrap' && val('vs_temp')) rows.push({k:'Temperature', v:val('vs_temp') + ' ' + val('vs_tempUnit')});
+      else if(f.id === 'vs_bmiWrap' && val('vs_bmi')) rows.push({k:'BMI', v:val('vs_bmi')});
+      else if(f.id === 'ob_gtpal' && val('ob_gtpal')) rows.push({k:'GTPAL', v:val('ob_gtpal')});
+      return;
+    }
+    if(!f.id) return;
+    var id = prefix + f.id; var v = fieldValueForMd(f, id);
+    if(v !== '') rows.push({k:f.label, v:v});
+  });
+}
+function buildEntryMarkdown(){
+  var md = '# OB/GYN encounter — raw entries\n\n';
+  md += '- Saved: ' + new Date().toLocaleString() + '\n';
+  md += '- Patient: ' + (V('pt_name') || '—') + '\n';
+  md += '- Date of visit: ' + (fmtDate(V('pt_visitDate')) || '—') + '\n';
+  md += '- Visit type: ' + (V('ob_visit') || '—') + '\n';
+  if(gaStr()) md += '- Gestational age: ' + gaStr() + '\n';
+  md += '\n';
+  SECTIONS.forEach(function(s){
+    if(s.when && !evalWhen(s.when)) return;
+    var rows = []; collectRowsMd(s.fields, '', rows);
+    if(!rows.length) return;
+    md += '## ' + s.title + '\n\n';
+    var table = rows.filter(function(r){ return r.k !== undefined; });
+    if(table.length){
+      md += '| Field | Value |\n|---|---|\n';
+      table.forEach(function(r){ md += '| ' + mdEscape(r.k) + ' | ' + mdEscape(r.v) + ' |\n'; });
+      md += '\n';
+    }
+    rows.filter(function(r){ return r.sub; }).forEach(function(r){
+      md += '**' + r.sub + '**\n\n';
+      r.items.forEach(function(it, i){ md += (i+1) + '. ' + mdEscape(it) + '\n'; });
+      md += '\n';
+    });
+  });
+  var cw = clinicalWarnings();
+  if(cw.length){ md += '## Clinical warnings\n\n'; cw.forEach(function(w){ md += '- ' + w + ' ' + URGENT + '\n'; }); md += '\n'; }
+  var icd = getIcdList();
+  if(icd.length){ md += '## Suggested ICD-10-CM codes\n\n'; icd.forEach(function(c){ md += '- ' + c.code + (c.desc ? ' — ' + c.desc : '') + '\n'; }); md += '\n'; }
+  return md;
+}
+function buildNoteMarkdown(){
+  var note = $('output').classList.contains('empty') ? '' : $('output').textContent;
+  var md = '# SOAP note\n\n';
+  md += '- Saved: ' + new Date().toLocaleString() + '\n';
+  md += '- Patient: ' + (V('pt_name') || '—') + '\n';
+  md += '- Date of visit: ' + (fmtDate(V('pt_visitDate')) || '—') + '\n';
+  md += '- Visit type: ' + (V('ob_visit') || '—') + '\n\n';
+  md += '```\n' + note + '\n```\n\n';
+  var icd = getIcdList();
+  if(icd.length){ md += '## ICD-10-CM codes\n\n'; icd.forEach(function(c){ md += '- ' + c.code + (c.desc ? ' — ' + c.desc : '') + '\n'; }); md += '\n'; }
+  return md;
+}
+function downloadText(filename, text){
+  var blob = new Blob([text], {type:'text/markdown;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = el('a',{href:url,download:filename}); document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+}
+function saveEntryMd(){
+  var name = fileStamp() + '_entry.md';
+  downloadText(name, buildEntryMarkdown());
+  toast('Downloaded ' + name + ' — move it to data/entries/ (or run ./sync.sh).');
+}
+function saveNoteMd(){
+  if($('output').classList.contains('empty')){ toast('Generate the SOAP note first.'); return; }
+  var name = fileStamp() + '_note.md';
+  downloadText(name, buildNoteMarkdown());
+  toast('Downloaded ' + name + ' — move it to data/notes/ (or run ./sync.sh).');
+}
+
+/* ---------- buttons ---------- */
+function copyNote(){
+  if($('output').classList.contains('empty')){ toast('Generate the SOAP note first.'); return; }
+  var text = $('output').textContent;
+  function fallback(){
+    var ta = el('textarea',{style:'position:fixed;left:-9999px;top:0'}); ta.value = text; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('SOAP note copied to clipboard.'); }catch(e){ toast('Copy failed — select the note text and copy manually.'); }
+    document.body.removeChild(ta);
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ toast('SOAP note copied to clipboard.'); }, fallback);
+  } else fallback();
+}
+function printNote(){
+  if($('output').classList.contains('empty')){ toast('Generate the SOAP note first.'); return; }
+  window.print();
+}
+function resetFieldsToDefaults(){
+  var inputs = document.querySelectorAll('#form input, #form select, #form textarea');
+  for(var i=0;i<inputs.length;i++){
+    var e = inputs[i]; if(e.closest('.rrow')) continue;
+    var m = META[e.id];
+    if(e.tagName === 'SELECT'){
+      var def = m && m.def !== undefined ? m.def : '';
+      if(def === '' && !e.querySelector('option[value=""]')) def = e.options.length ? e.options[0].value : '';
+      e.value = def;
+    } else e.value = '';
+  }
+  for(var gid in REPS){ if(REPS.hasOwnProperty(gid)) clearRows(gid); }
+  $('pt_visitDate').value = todayISO();
+  lastVisitType = val('ob_visit');
+  updateConditionals(); computeDerived(); showLiveWarnings();
+}
+function clearForm(){
+  resetFieldsToDefaults();
+  saveDraft();
+  toast('Form cleared.');
+}
+function resetAll(){
+  if(!window.confirm('Reset everything? This clears the form, the generated note, the ICD-10 list, and the saved draft in this browser.')) return;
+  resetFieldsToDefaults();
+  $('output').textContent = 'Your SOAP note will appear here after you click Generate SOAP Note.'; $('output').classList.add('empty');
+  $('errors').innerHTML = ''; $('errors').classList.remove('show'); $('noteWarn').innerHTML = ''; $('noteWarn').classList.remove('show');
+  setIcdList([]);
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  var s = $('saveStatus'); if(s) s.textContent = 'Draft cleared.';
+  toast('Everything has been reset.');
+}
+
+/* ---------- init ---------- */
+function init(){
+  renderSections();
+  setIcdList([]);
+  $('pt_visitDate').value = todayISO();
+  lastVisitType = val('ob_visit');
+  var form = $('form');
+  form.addEventListener('change', afterChange);
+  form.addEventListener('input', afterChange);
+  var restored = restoreDraft();
+  if(!$('pt_visitDate').value) $('pt_visitDate').value = todayISO();
+  updateConditionals(); computeDerived(); showLiveWarnings();
+  if(restored) toast('Draft restored from this browser.');
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
